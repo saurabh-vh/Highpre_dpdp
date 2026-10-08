@@ -1,0 +1,54 @@
+# Runs HighPre behind Caddy, which provisions HTTPS certificates automatically.
+# MongoDB is external (Atlas). Set DOMAIN and fill in .env before `docker compose up -d`.
+services:
+  app:
+    build:
+      context: .
+      # Signs desktop-agent updates. Create once with:
+      #   node agent/build.mjs --generate-key > agent-update-key.pem
+      secrets:
+        - agent_update_key
+    env_file: .env
+    restart: unless-stopped
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  # Hourly scheduled jobs: request and breach deadline reminders, cleanup.
+  # Each reminder is sent once, so running often is safe.
+  cron:
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - app
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sleep 60
+        while true; do
+          curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://app:3000/api/cron/run || echo "cron run failed"
+          sleep 3600
+        done
+
+secrets:
+  agent_update_key:
+    file: ./agent-update-key.pem
+
+volumes:
+  caddy_data:
+  caddy_config:

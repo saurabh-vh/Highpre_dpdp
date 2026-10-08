@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+.env
+.env.local
+.env.production
+backups/
+*.tsbuildinfo
+next-env.d.ts
+public/widget.js
+.DS_Store
+agent/dist
+*.pem

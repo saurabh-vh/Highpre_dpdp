@@ -1,0 +1,7 @@
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000 {
+		# Overwrite any client-supplied value so rate limits can't be dodged.
+		header_up X-Real-IP {remote_host}
+	}
+}

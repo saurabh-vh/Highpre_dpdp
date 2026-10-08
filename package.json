@@ -1,0 +1,57 @@
+{
+  "name": "highpre",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HighPre — DPDP compliance platform for Indian businesses",
+  "scripts": {
+    "dev": "npm run build:widget && next dev",
+    "build": "npm run build:widget && next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "build:widget": "node widget/build.mjs",
+    "predev": "node scripts/check-node.mjs",
+    "prebuild": "node scripts/check-node.mjs",
+    "prestart": "node scripts/check-node.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build:agent": "node agent/build.mjs",
+    "test:agent": "cd agent && go test ./..."
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cheerio": "^1.2.0",
+    "geist": "^1.7.2",
+    "jose": "^6.2.12",
+    "lucide-react": "^1.52.0",
+    "mongoose": "^9.11.0",
+    "next": "15.5.27",
+    "nodemailer": "^10.0.15",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@types/node": "^22.10.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "15.5.27",
+    "mongodb-memory-server": "^10.4.3",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.7"
+  }
+}

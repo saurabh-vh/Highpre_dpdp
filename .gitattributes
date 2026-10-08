@@ -1,0 +1,5 @@
+# Store and check out text with LF, so shell scripts and the Caddyfile work on the Linux server.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.exe binary
