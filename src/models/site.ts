@@ -1,6 +1,8 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 import { DATA_CATEGORY_VALUES } from "@/lib/constants";
 import { DEFAULT_SITE_LANGUAGES, LANG_CODES } from "@/lib/i18n/languages";
+import { BANNER_LAYOUTS } from "@/lib/banner-layout";
+import { GOOGLE_CONSENT_TYPES } from "@/lib/consent-mode";
 
 const translationSchema = new Schema(
   {
@@ -46,6 +48,23 @@ const bannerSchema = new Schema(
     },
     defaultLanguage: { type: String, enum: LANG_CODES, default: "en" },
     showReopenButton: { type: Boolean, default: true },
+    /** bar | popup | box. Unset on older banners: resolved from position by bannerLayout(). */
+    layout: { type: String, enum: BANNER_LAYOUTS },
+    /** Custom colours (#rrggbb) and font-family list; empty means the theme's defaults and the system font. */
+    primaryColor: { type: String, default: "" },
+    backgroundColor: { type: String, default: "" },
+    textColor: { type: String, default: "" },
+    fontFamily: { type: String, trim: true, maxlength: 200, default: "" },
+    /** Google Consent Mode v2 and Meta Pixel consent signals sent by the widget. */
+    googleConsentMode: { type: Boolean, default: false },
+    metaPixelConsent: { type: Boolean, default: false },
+    adsDataRedaction: { type: Boolean, default: true },
+    urlPassthrough: { type: Boolean, default: false },
+    /** Purpose → Google consent types. Purposes without an entry use defaultConsentTypes(). */
+    consentTypes: {
+      type: [new Schema({ purpose: { type: String, required: true }, types: { type: [String], enum: GOOGLE_CONSENT_TYPES, default: [] } }, { _id: false })],
+      default: undefined,
+    },
   },
   { _id: false },
 );
@@ -64,12 +83,40 @@ const siteSchema = new Schema(
     children: {
       enabled: { type: Boolean, default: false },
     },
+    /** Consent checkboxes the widget adds to the website's own forms (widget/src/forms.js). */
+    forms: {
+      /** Add the boxes to any form asking for an email, phone or name, not just marked ones. */
+      autoProtect: { type: Boolean, default: false },
+      /** Purpose keys shown on auto-protected forms and on forms marked data-hp-consent="". */
+      purposes: { type: [String], default: [] },
+      /** Purpose keys whose box must be ticked before the form submits (unless data-hp-required says otherwise). */
+      requiredPurposes: { type: [String], default: [] },
+    },
+    /** Weekly automatic rescans with change alerts. Sites created before this field count as on. */
+    monitoring: {
+      enabled: { type: Boolean, default: true },
+      lastAlertAt: { type: Date },
+    },
+    /** Public privacy centre at /p/<siteKey>. Shown only once a notice is published. */
+    privacyCentre: {
+      enabled: { type: Boolean, default: true },
+      /** List active vendors from the register (name, category, country). */
+      showVendors: { type: Boolean, default: false },
+    },
     publishedNoticeVersion: { type: Number, default: 0 },
     lastScanId: { type: Schema.Types.ObjectId, ref: "Scan" },
     /** The site's favicon, fetched during scans and served from HighPre (never hot-linked). */
     favicon: {
       data: { type: Buffer, select: false },
       contentType: { type: String },
+      fetchedAt: { type: Date },
+    },
+    /** Colours and font found on the website during scans; offered as "Use my website's colours". */
+    brand: {
+      primary: { type: String },
+      background: { type: String },
+      text: { type: String },
+      font: { type: String },
       fetchedAt: { type: Date },
     },
     widgetLastSeenAt: { type: Date },

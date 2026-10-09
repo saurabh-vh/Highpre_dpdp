@@ -1,4 +1,4 @@
-import { ScanSearch } from "lucide-react";
+import { CircleAlert, Info, ScanSearch, TriangleAlert } from "lucide-react";
 import { ScanFindings, type FindingView } from "@/components/scanner/scan-findings";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
@@ -6,22 +6,30 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { RunScanButton } from "@/features/sites/run-scan-button";
 import { requireSite } from "@/lib/auth/guards";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Scan } from "@/models";
 
 export const metadata = { title: "Website scan" };
+
+const changeIcon = { critical: CircleAlert, warning: TriangleAlert, info: Info } as const;
 
 export default async function SiteScanPage({ params, searchParams }: { params: Promise<{ siteId: string }>; searchParams: Promise<{ new?: string }> }) {
   const [{ siteId }, { new: isNew }] = await Promise.all([params, searchParams]);
   const site = await requireSite(siteId);
   const scan = await Scan.findOne({ siteId: site._id }).sort({ createdAt: -1 }).lean();
   const lastGood = scan?.status === "complete" ? scan : await Scan.findOne({ siteId: site._id, status: "complete" }).sort({ createdAt: -1 }).lean();
+  const monitoring = site.monitoring?.enabled === false ? "Monitoring off." : "Checked automatically every week.";
 
   return (
     <div className="space-y-6">
       <Panel>
         <PanelHeader
           title="Website scan"
-          description={lastGood ? `Last scanned ${formatDateTime(lastGood.createdAt)}. Static HTML only; content added later by JavaScript may not appear.` : "Find the forms, trackers and gaps that matter under DPDP."}
+          description={
+            lastGood
+              ? `Last scanned ${formatDateTime(lastGood.createdAt)}${lastGood.trigger === "scheduled" ? " (weekly check)" : ""}. ${monitoring} Static HTML only; content added later by JavaScript may not appear.`
+              : "Find the forms, trackers and gaps that matter under DPDP."
+          }
           action={<RunScanButton siteId={site.id} hasScan={Boolean(lastGood)} autoStart={Boolean(isNew) && !scan} />}
         />
         {lastGood ? (
@@ -36,6 +44,25 @@ export default async function SiteScanPage({ params, searchParams }: { params: P
           <EmptyState icon={ScanSearch} title="No scan yet" description="Run your first scan to see what this website collects and what needs fixing." />
         )}
       </Panel>
+
+      {lastGood && lastGood.changes.length > 0 && (
+        <Panel>
+          <PanelHeader title="Changes since the previous scan" description="What this scan found that the one before it didn't, or the other way round." />
+          <PanelBody>
+            <ul className="space-y-3">
+              {lastGood.changes.map((c, i) => {
+                const Icon = changeIcon[c.severity];
+                return (
+                  <li key={i} className="flex gap-3 text-sm">
+                    <Icon className={cn("mt-0.5 size-4 shrink-0", c.severity === "critical" ? "text-danger" : c.severity === "warning" ? "text-warning" : "text-mist")} aria-hidden />
+                    {c.message}
+                  </li>
+                );
+              })}
+            </ul>
+          </PanelBody>
+        </Panel>
+      )}
 
       {lastGood && (
         <div className="grid gap-6 md:grid-cols-2">

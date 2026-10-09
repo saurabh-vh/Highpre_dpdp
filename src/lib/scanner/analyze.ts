@@ -1,6 +1,7 @@
 // The slim build skips cheerio's network helpers (and their undici dependency),
 // which we don't need: pages are fetched by our own SSRF-safe client.
 import * as cheerio from "cheerio/slim";
+import { findMixedContent, formTarget } from "./security";
 import { CONSENT_TOOLS, PERSONAL_FIELDS, TRACKERS, type TrackerSignature } from "./signatures";
 
 export type PageAnalysis = {
@@ -12,6 +13,10 @@ export type PageAnalysis = {
   candidateLinks: string[];
   /** The site's declared icon (favicon), if any. */
   iconUrl?: string;
+  /** http:// resources on an https page. */
+  mixedContent: string[];
+  /** Where forms collecting personal data submit to, when that's plain http. */
+  insecureForms: string[];
 };
 
 const INTERESTING_PATH = /contact|enquir|inquir|sign.?up|register|book|appointment|get.?started|quote|demo/i;
@@ -48,6 +53,7 @@ export function analyzePage(html: string, pageUrl: string): PageAnalysis {
   };
 
   const forms: { fields: string[] }[] = [];
+  const insecureForms = new Set<string>();
   $("form").each((_, form) => {
     const fields = new Set<string>();
     $(form).find("input, textarea, select").each((__, el) => {
@@ -55,6 +61,8 @@ export function analyzePage(html: string, pageUrl: string): PageAnalysis {
       if (label) fields.add(label);
     });
     if (fields.size > 0) forms.push({ fields: [...fields] });
+    const target = formTarget($(form).attr("action"), pageUrl);
+    if ([...fields].some((f) => f !== "Message") && target?.startsWith("http:")) insecureForms.add(target);
   });
   const stray = new Set<string>();
   $("input, textarea").not("form input, form textarea").each((_, el) => {
@@ -99,5 +107,15 @@ export function analyzePage(html: string, pageUrl: string): PageAnalysis {
   const bodyText = $("body").text().toLowerCase();
   const mentionsGrievance = /grievance|data protection officer|शिकायत अधिकारी/.test(bodyText);
 
-  return { forms, trackers, consentTool, privacyLink, mentionsGrievance, candidateLinks: [...candidateLinks], iconUrl };
+  return {
+    forms,
+    trackers,
+    consentTool,
+    privacyLink,
+    mentionsGrievance,
+    candidateLinks: [...candidateLinks],
+    iconUrl,
+    mixedContent: findMixedContent($, pageUrl),
+    insecureForms: [...insecureForms],
+  };
 }

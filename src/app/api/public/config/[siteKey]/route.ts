@@ -4,6 +4,10 @@ import { json, limitOrNull, preflight } from "@/lib/http";
 import { getLocale, nativeName, purposeText, type WidgetStrings } from "@/lib/i18n";
 import { en } from "@/lib/i18n/locales/en";
 import { isTracking } from "@/lib/constants";
+import { formsConfig } from "@/lib/consent/forms";
+import { bannerLayout, safeFontFamily } from "@/lib/banner-layout";
+import { isHex } from "@/lib/color";
+import { resolveConsentTypes } from "@/lib/consent-mode";
 import { Notice, Site } from "@/models";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ siteKey:
 
   const { siteKey } = await params;
   await connectDb();
-  const site = await Site.findOne({ siteKey }).select("purposes banner publishedNoticeVersion widgetLastSeenAt children").lean();
+  const site = await Site.findOne({ siteKey }).select("purposes banner publishedNoticeVersion widgetLastSeenAt children forms").lean();
   if (!site) return json({ error: "Unknown site" }, { status: 404, cors: true });
 
   // Record that the widget is installed, at most once an hour.
@@ -44,7 +48,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ siteKey:
     {
       ready: version > 0,
       version,
-      banner: { position: site.banner.position, theme: site.banner.theme, showReopenButton: site.banner.showReopenButton, defaultLanguage: site.banner.defaultLanguage },
+      banner: {
+        position: site.banner.position,
+        theme: site.banner.theme,
+        showReopenButton: site.banner.showReopenButton,
+        defaultLanguage: site.banner.defaultLanguage,
+        layout: bannerLayout(site.banner),
+        primaryColor: isHex(site.banner.primaryColor) ? site.banner.primaryColor : "",
+        backgroundColor: isHex(site.banner.backgroundColor) ? site.banner.backgroundColor : "",
+        textColor: isHex(site.banner.textColor) ? site.banner.textColor : "",
+        fontFamily: safeFontFamily(site.banner.fontFamily),
+      },
+      // Consent signals for Google tags and the Meta Pixel; the widget caches this to set defaults before they load.
+      consentMode: {
+        google: Boolean(site.banner.googleConsentMode),
+        meta: Boolean(site.banner.metaPixelConsent),
+        adsDataRedaction: site.banner.adsDataRedaction !== false,
+        urlPassthrough: Boolean(site.banner.urlPassthrough),
+        types: resolveConsentTypes(site.purposes, site.banner.consentTypes),
+      },
       languages: languages.map((code) => ({ code, name: nativeName(code) })),
       strings,
       purposes: site.purposes.map((p) => ({
@@ -54,6 +76,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ siteKey:
         text: Object.fromEntries(languages.map((lang) => [lang, purposeText(p, lang)])),
       })),
       children: Boolean(site.children?.enabled),
+      // Consent checkboxes on the website's own forms (widget/src/forms.js).
+      forms: formsConfig(site.purposes, site.forms),
       noticeUrl: `${base}/p/${siteKey}/notice`,
       rightsUrl: `${base}/p/${siteKey}/rights`,
       parentalUrl: `${base}/p/${siteKey}/parental`,

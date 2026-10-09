@@ -13,6 +13,10 @@ type NewConsent = {
   language: Lang;
   ageGroup?: "adult" | "child";
   parentalConsentId?: Types.ObjectId;
+  /** Form consent only; banner records leave these unset. */
+  source?: "form";
+  formId?: string;
+  receiptId?: string;
   pageUrl?: string;
   ipHash?: string;
   userAgent?: string;

@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { log } from "@/lib/log";
 import { sendMail } from "@/lib/mail/mailer";
 import { breachReminderEmail, dpaRenewalReminderEmail, requestReminderEmail } from "@/lib/mail/templates";
+import { runScheduledScans } from "@/lib/scanner/monitor";
 import { AgentDevice, BillingEvent, Breach, Organization, RightsRequest, Scan, User, Vendor } from "@/models";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,7 @@ async function recipients(orgId: Types.ObjectId | string) {
  * - breach reports due within 24 hours
  * - vendor DPA renewals due within 14 days
  * - cleanup of anonymous scans and old billing events
+ * - weekly rescans of up to 3 monitored sites, with change alerts (last: the slowest job)
  * Call with `Authorization: Bearer $CRON_SECRET`.
  */
 export async function POST(req: Request) {
@@ -120,6 +122,13 @@ export async function POST(req: Request) {
 
   // Agent downloads that never checked in within 30 days: drop their tokens.
   stats.unusedAgentDownloads = (await AgentDevice.deleteMany({ lastSeenAt: { $exists: false }, createdAt: { $lt: new Date(now.getTime() - 30 * 86_400_000) } })).deletedCount;
+
+  // ── Weekly monitoring ──
+  try {
+    Object.assign(stats, await runScheduledScans(now));
+  } catch (error) {
+    log.error("monitoring.run_failed", { error: String(error) });
+  }
 
   log.info("cron.run", stats);
   return Response.json({ ok: true, ...stats });

@@ -19,11 +19,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ siteId:
 
   const stream = new ReadableStream({
     async start(controller) {
-      controller.enqueue(encoder.encode("timestamp,visitor_id,action,notice_version,language,age_group,parental_consent_id,granted,refused,page_url,record_hash\n"));
+      controller.enqueue(encoder.encode("timestamp,visitor_id,action,notice_version,language,age_group,parental_consent_id,granted,refused,page_url,record_hash,source,form_id,receipt_id\n"));
       for await (const r of cursor) {
         const granted = r.decisions.filter((d) => d.granted).map((d) => d.purpose).join(" ");
         const refused = r.decisions.filter((d) => !d.granted).map((d) => d.purpose).join(" ");
-        const row = [r.createdAt?.toISOString(), r.principalId, r.action, r.noticeVersion, r.language, r.ageGroup, r.parentalConsentId, granted, refused, r.pageUrl, r.hash];
+        const row = [r.createdAt?.toISOString(), r.principalId, r.action, r.noticeVersion, r.language, r.ageGroup, r.parentalConsentId, granted, refused, r.pageUrl, r.hash, r.source ?? "banner", r.formId, r.receiptId];
         controller.enqueue(encoder.encode(row.map(csvCell).join(",") + "\n"));
       }
       controller.close();

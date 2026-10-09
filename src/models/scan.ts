@@ -6,6 +6,18 @@ const findingSchema = new Schema(
     severity: { type: String, enum: ["critical", "warning", "pass"], required: true },
     title: { type: String, required: true },
     detail: { type: String, default: "" },
+    /** "security" for the safeguards checks; unset for the DPDP checks. */
+    group: { type: String },
+  },
+  { _id: false },
+);
+
+/** What changed since the site's previous complete scan (see lib/scanner/changes.ts). */
+const changeSchema = new Schema(
+  {
+    kind: { type: String, required: true },
+    severity: { type: String, enum: ["critical", "warning", "info"], required: true },
+    message: { type: String, required: true },
   },
   { _id: false },
 );
@@ -31,6 +43,17 @@ const scanSchema = new Schema(
     privacyNoticeUrl: { type: String },
     consentTool: { type: String },
     findings: { type: [findingSchema], default: [] },
+    /** Security headers, TLS certificate, mixed content, insecure forms and cookies. */
+    security: {
+      headers: { missing: { type: [String], default: undefined }, present: { type: [String], default: undefined } },
+      certificate: { validTo: Date, issuer: String, authorized: Boolean, error: String },
+      mixedContent: { count: Number, examples: { type: [String], default: undefined } },
+      insecureForms: { type: [String], default: undefined },
+      insecureCookies: { type: [String], default: undefined },
+    },
+    /** Who started it: a person, or the weekly monitoring job. */
+    trigger: { type: String, enum: ["manual", "scheduled"] },
+    changes: { type: [changeSchema], default: [] },
   },
   { timestamps: true },
 );

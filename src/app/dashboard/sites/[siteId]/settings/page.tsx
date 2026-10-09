@@ -1,8 +1,11 @@
+import { Callout } from "@/components/ui/callout";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { DeleteSiteForm } from "@/features/sites/delete-site-form";
-import { ChildrenForm, LanguagesForm, SiteDetailsForm } from "@/features/sites/site-settings-forms";
+import { PrivacyCentreForm, PrivacyCentreLinks } from "@/features/sites/privacy-centre-settings";
+import { ChildrenForm, LanguagesForm, MonitoringForm, SiteDetailsForm } from "@/features/sites/site-settings-forms";
 import { requireAuth, requireSite } from "@/lib/auth/guards";
 import { can } from "@/lib/auth/permissions";
+import { env } from "@/lib/env";
 import { normalizeLanguages } from "@/lib/i18n/languages";
 
 export const metadata = { title: "Website settings" };
@@ -26,6 +29,28 @@ export default async function SiteSettingsPage({ params }: { params: Promise<{ s
         <PanelHeader title="Children's data" description="Turn this on if people under 18 may use your website, for example schools, coaching, games or youth products." />
         <PanelBody>
           <ChildrenForm siteId={site.id} enabled={Boolean(site.children?.enabled)} readOnly={!canPublish} />
+        </PanelBody>
+      </Panel>
+
+      <Panel>
+        <PanelHeader title="Privacy centre" description="A public page for your visitors that brings your notice, data requests, contacts and trackers together." />
+        <PanelBody className="space-y-6">
+          {(site.publishedNoticeVersion ?? 0) === 0 && (
+            <Callout tone="warning">The privacy centre goes live once you publish a privacy notice.</Callout>
+          )}
+          <PrivacyCentreForm siteId={site.id} enabled={site.privacyCentre?.enabled !== false} showVendors={Boolean(site.privacyCentre?.showVendors)} readOnly={!canPublish} />
+          <PrivacyCentreLinks
+            url={`${env().APP_URL}/p/${site.siteKey}`}
+            badgeUrl={`${env().APP_URL}/p/${site.siteKey}/badge.svg`}
+            live={(site.publishedNoticeVersion ?? 0) > 0 && site.privacyCentre?.enabled !== false}
+          />
+        </PanelBody>
+      </Panel>
+
+      <Panel>
+        <PanelHeader title="Weekly monitoring" description="HighPre rescans the website automatically and tells you what changed since the previous scan." />
+        <PanelBody>
+          <MonitoringForm siteId={site.id} enabled={site.monitoring?.enabled !== false} readOnly={!canManage} />
         </PanelBody>
       </Panel>
 

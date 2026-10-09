@@ -10,11 +10,8 @@ import { siteLimitReached } from "@/lib/billing/usage";
 import { PURPOSE_PRESETS } from "@/lib/constants";
 import { randomToken } from "@/lib/crypto";
 import { languageLabel, normalizeLanguages } from "@/lib/i18n/languages";
-import { log } from "@/lib/log";
-import { scanErrorMessage, scanWebsite } from "@/lib/scanner";
-import { safeFetchImage } from "@/lib/scanner/safe-fetch";
+import { scanSite } from "@/lib/scanner/run-site-scan";
 import { siteLanguagesSchema, siteSchema } from "@/lib/validation";
-import { syncVendorsFromScan } from "@/lib/vendors/sync";
 import { ConsentRecord, Notice, ParentalConsent, RightsRequest, Scan, Site } from "@/models";
 
 export async function createSiteAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -45,21 +42,8 @@ export async function runSiteScanAction(siteId: string): Promise<ActionState> {
   const { role } = await requireAuth();
   if (!can(role, "content.edit")) return fail(denied("content.edit"));
   const site = await requireSite(siteId);
-  try {
-    const result = await scanWebsite(site.url);
-    const scan = await Scan.create({ siteId: site._id, status: "complete", ...result });
-    const icon = (await safeFetchImage(result.faviconUrl)) ?? (await safeFetchImage(new URL("/favicon.ico", result.url).toString()));
-    await Site.updateOne(
-      { _id: site._id },
-      { lastScanId: scan._id, ...(icon ? { favicon: { data: icon.data, contentType: icon.contentType, fetchedAt: new Date() } } : {}) },
-    );
-    // The scan itself succeeded; a vendor register hiccup shouldn't report it as failed.
-    await syncVendorsFromScan(site.orgId, site._id, scan).catch((error) => log.error("vendors.sync_failed", { siteId, error: String(error) }));
-  } catch (error) {
-    const message = scanErrorMessage(error);
-    await Scan.create({ siteId: site._id, url: site.url, status: "failed", error: message });
-    return fail(message);
-  }
+  const outcome = await scanSite(site, { trigger: "manual" });
+  if (!outcome.ok) return fail(outcome.error);
   revalidatePath(`/dashboard/sites/${siteId}`, "layout");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/vendors");
@@ -106,6 +90,18 @@ export async function saveChildrenSettingsAction(siteId: string, _prev: ActionSt
   await audit(org._id, user, "site.children", `${enabled ? "Turned on" : "Turned off"} the age check and parental consent for ${site.name}`, site._id);
   revalidatePath(`/dashboard/sites/${siteId}`, "layout");
   return succeed(enabled ? "Age check on. Publish your notice again to add the section on children." : "Age check off.");
+}
+
+/** Weekly automatic rescans, with an email when something gets worse. */
+export async function saveMonitoringSettingsAction(siteId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { org, user, role } = await requireAuth();
+  if (!can(role, "sites.manage")) return fail(denied("sites.manage"));
+  const site = await requireSite(siteId);
+  const enabled = formData.get("enabled") === "on";
+  await Site.updateOne({ _id: site._id }, { "monitoring.enabled": enabled });
+  await audit(org._id, user, "site.monitoring", `${enabled ? "Turned on" : "Turned off"} weekly monitoring for ${site.name}`, site._id);
+  revalidatePath(`/dashboard/sites/${siteId}`, "layout");
+  return succeed(enabled ? "Weekly monitoring on." : "Weekly monitoring off.");
 }
 
 export async function deleteSiteAction(siteId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {

@@ -98,6 +98,10 @@ export const mr: Locale = {
     essentialOnly: "फक्त आवश्यक सुविधांसह पुढे जा",
     waitingParent: "पालक किंवा संरक्षकाच्या उत्तराची प्रतीक्षा आहे.",
     notForChildren: "18 वर्षांखालील व्यक्तींसाठी उपलब्ध नाही",
+    formLegend: "माझी माहिती पुढील कारणांसाठी वापरली जाऊ शकते याला माझी संमती आहे:",
+    formRequired: "आवश्यक",
+    formOptional: "पर्यायी",
+    formError: "पुढे जाण्यासाठी कृपया आवश्यक संमतीच्या चौकटीवर खूण करा.",
   },
   portal: {
     title: (business) => `${business} कडे विनंती करा`,

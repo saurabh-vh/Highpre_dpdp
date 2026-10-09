@@ -44,6 +44,9 @@ export async function checkLedger(siteId: Types.ObjectId, range: { from: Date; t
       language: r.language,
       ageGroup: r.ageGroup,
       parentalConsentId: r.parentalConsentId ? String(r.parentalConsentId) : null,
+      source: r.source,
+      formId: r.formId,
+      receiptId: r.receiptId,
       createdAt: r.createdAt,
     });
     if (expected === r.hash) result.verified++;

@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { ScanForm } from "./scan-form";
 import { ScanFindings, type FindingView } from "./scan-findings";
+import { ScanShare } from "./scan-share";
 
 type Report = {
   url: string;
@@ -16,18 +17,23 @@ type Report = {
   privacyNoticeUrl?: string;
   consentTool?: string;
   findings: FindingView[];
+  /** Public id of the stored, shareable copy (absent if it couldn't be saved). */
+  reportId?: string | null;
 };
+
+export type ScanReportData = Report;
 
 type State = { status: "loading" } | { status: "error"; message: string } | { status: "done"; report: Report };
 
 const PROGRESS = ["Fetching your homepage", "Looking for forms and trackers", "Checking contact and signup pages", "Writing up the findings"];
 
-/** Runs a public scan and renders the report. */
-export function ScanReport({ url }: { url: string }) {
-  const [state, setState] = useState<State>({ status: "loading" });
+/** Runs a public scan and renders the report, or renders a stored report (`initial`) without scanning. */
+export function ScanReport({ url, initial }: { url: string; initial?: Report }) {
+  const [state, setState] = useState<State>(initial ? { status: "done", report: initial } : { status: "loading" });
   const [step, setStep] = useState(0);
 
   useEffect(() => {
+    if (initial) return;
     const controller = new AbortController();
     setState({ status: "loading" });
     setStep(0);
@@ -53,7 +59,7 @@ export function ScanReport({ url }: { url: string }) {
       controller.abort();
       clearInterval(ticker);
     };
-  }, [url]);
+  }, [url, initial]);
 
   if (state.status === "loading") {
     return (
@@ -142,6 +148,7 @@ export function ScanReport({ url }: { url: string }) {
             )}
           </section>
         </div>
+        {report.reportId && <ScanShare reportId={report.reportId} />}
         <p className="px-2 text-2xs leading-relaxed text-mist">
           This scan reads your pages&apos; HTML. Content added later by JavaScript may not appear. It&apos;s a starting point, not a legal audit.
         </p>

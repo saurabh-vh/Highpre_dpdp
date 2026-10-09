@@ -22,6 +22,11 @@ const consentRecordSchema = new Schema(
     ageGroup: { type: String, enum: ["adult", "child"] },
     /** For a child's consent given by a verified parent or guardian. */
     parentalConsentId: { type: Schema.Types.ObjectId, ref: "ParentalConsent" },
+    /** Where consent was given. Unset means the banner (records from before form consent). */
+    source: { type: String, enum: ["banner", "form"] },
+    /** For form consent: the form's id, name or action path, and the receipt id sent with the lead as hp_consent_id. */
+    formId: { type: String, maxlength: 100 },
+    receiptId: { type: String, maxlength: 36 },
     pageUrl: { type: String, maxlength: 500 },
     ipHash: { type: String },
     userAgent: { type: String, maxlength: 300 },
@@ -34,6 +39,8 @@ const consentRecordSchema = new Schema(
 
 consentRecordSchema.index({ siteId: 1, createdAt: -1 });
 consentRecordSchema.index({ siteId: 1, principalId: 1, createdAt: -1 });
+// One record per receipt: a replayed submission can't add a second record under the same id.
+consentRecordSchema.index({ receiptId: 1 }, { unique: true, partialFilterExpression: { receiptId: { $type: "string" } } });
 
 export type ConsentRecordDoc = InferSchemaType<typeof consentRecordSchema>;
 export const ConsentRecord: Model<ConsentRecordDoc> =

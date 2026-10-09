@@ -98,6 +98,10 @@ export const hi: Locale = {
     essentialOnly: "केवल आवश्यक सुविधाओं के साथ जारी रखें",
     waitingParent: "माता-पिता या अभिभावक के जवाब की प्रतीक्षा है।",
     notForChildren: "18 वर्ष से कम आयु वालों के लिए उपलब्ध नहीं",
+    formLegend: "मैं सहमत हूँ कि मेरी जानकारी का उपयोग इनके लिए किया जा सकता है:",
+    formRequired: "ज़रूरी",
+    formOptional: "वैकल्पिक",
+    formError: "आगे बढ़ने के लिए कृपया ज़रूरी सहमति बॉक्स पर टिक करें।",
   },
   portal: {
     title: (business) => `${business} को अनुरोध भेजें`,

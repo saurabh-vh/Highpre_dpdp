@@ -31,6 +31,8 @@ app runs with the Free plan only and the billing page says payments aren't set u
 | Area | What it does |
 |---|---|
 | Scanner | SSRF-safe crawl of a homepage plus form pages; finds forms, 17 trackers, consent tools, notice and grievance links; scores 0–100. |
+| Security checks | Part of every scan ("reasonable security safeguards"): missing security headers (HSTS, clickjacking protection, CSP, nosniff, referrer policy) as one finding, SSL certificate expiry and trust (expired or untrusted = must fix, under 14 days = review), mixed content, forms posting personal data over http, cookies without Secure/HttpOnly. Shown as a "Security" group; their score penalty is capped at 20 points. |
+| Weekly monitoring | Sites are rescanned automatically every 7 days by the hourly job (3 sites per run, one at a time). Each scan lists changes since the previous one: new or removed trackers, lost consent banner, privacy notice link or grievance contact, lost HTTPS, SSL expiring or expired, score down 10+ points. Owners and admins get at most one email a day per site, logged in the activity log. On by default; toggle in the site's settings. |
 | Data inventory | Purposes with data categories, retention, sharing, an "essential" flag and a "tracking/ads" flag; per-language wording. |
 | Privacy notice | Generated in each language the site offers (English, Hindi, Bengali, Marathi, Tamil, Telugu, Gujarati, Kannada); immutable versions. |
 | Consent banner | `widget.js` (~11 KB, Shadow DOM, no cookies). Picks the visitor's browser language, equal-weight accept/reject, script blocking, reopen button. |
@@ -38,6 +40,8 @@ app runs with the Free plan only and the billing page says payments aren't set u
 | Consent ledger | Append-only; every record carries a SHA-256 content hash. CSV export with hashes. |
 | Consent analytics | Per site over 7/30/90 days: accept-all / reject-all / customised / withdrawn rates with change vs the previous period, daily chart (India time), opt-in per optional purpose, breakdown by language. Org-wide summary on the overview; 90-day statistics in the evidence pack. |
 | Rights requests | Email-verified public request page in the site's languages; inbox with due dates and an audit trail. |
+| Privacy centre | Public page at `/p/<siteKey>` once a notice is published: business and website, purposes from the notice (in the notice's languages), links to the notice, data requests and parental consent, grievance contact, trackers and cookies from the latest scan (and whether they wait for consent), optionally active vendors (name, category, country), how to change cookie choices, and "last checked" date. Toggles in site settings ("Publish privacy centre", on by default; "Show vendors", off by default). Embeddable badge `/p/<siteKey>/badge.svg` (`?theme=dark`, `?size=small`), cached 1 hour, `Cross-Origin-Resource-Policy: cross-origin`; it reads "Privacy centre by HighPre" and claims no certification. |
+| Public scan reports | Each free scan on `/scan` is saved as a shareable, unlisted report at `/scan/r/<id>` (22-character random id, noindex, deleted after 30 days by a TTL index). "Email me the PDF report" builds a branded PDF from the stored report (no new fetching) and emails it as an attachment; rate-limited per IP (5/hour) and per email (3/day). Requests are stored as `ScanLead` documents with a separate, unticked product-updates consent (`marketingConsent`: granted, time, purpose, version and wording) and an IP hash. There's no admin UI yet: query the `scanleads` collection (indexed by email, date and `marketingConsent.granted`), and only email people with `marketingConsent.granted: true`. |
 | Breaches | 72-hour checklist with a draft notice to affected people. |
 | Vendors | Register of data processors, filled automatically from scans (one record per detected tracker or consent tool) or added by hand; DPA status, signed and renewal dates, processing country; renewal reminders 14 days ahead; listed in the evidence pack. Owners and admins edit, everyone can view. |
 | Evidence pack | PDF for a chosen period: fiduciary details, team, purposes, notice versions, consent statistics with a tamper check and ledger digest, requests (on-time rate), breaches, activity log. Paid plans. |
@@ -181,6 +185,34 @@ are server actions in `features/*/actions.ts` returning `ActionState`; forms use
 - Each decision is appended to the ledger with the notice version shown and a content hash. Records are never edited.
 - Visitors are identified by a random ID in localStorage. IPs are stored only as salted hashes.
 - API: `window.HighPre.open()`, `.getConsent()`, `.onChange(fn)`, `.setLanguage(code)`; event `highpre:consent`.
+- Layouts: **box** (corner card), **bar** (full width; text beside the buttons on wide screens) or **popup** (centred over a dimmed page, focus kept inside). Banners saved before layouts existed map to the closest one (full width → bar, corner → box). All render in a Shadow DOM.
+- Escape never counts as consent: it steps back from the purpose list, or hides the banner with nothing optional granted and nothing recorded (the settings button stays, and the banner returns on the next page). Clicking the popup's backdrop does nothing.
+- Brand colours: each scan reads the site's likely brand colour, background, text colour and font (`src/lib/scanner/brand.ts`: theme-color, web manifest, `--primary`/`--brand` custom properties, button backgrounds and colour frequency in inline styles and the first two same-site stylesheets, all through the SSRF-safe fetcher). **Use my website's colours** fills the banner fields from it. Button text is black or white, whichever reaches 4.5:1; low-contrast text is darkened or lightened. Fonts are the site's own `font-family` names or the system stack; no web fonts are loaded.
+
+### Google Consent Mode v2 and Meta Pixel
+
+Turn these on under **Consent banner**. The widget must then run **before** the Google tag, GTM and the Pixel, and **without `async`**:
+
+```html
+<script src="https://yourdomain.com/widget.js" data-hp-site="SITE_KEY" data-hp-consent-mode></script>
+<!-- then the Google tag / GTM snippet and the Meta Pixel base code, unchanged -->
+```
+
+- On load it calls `gtag('consent', 'default', {…all denied…, security_storage: 'granted', wait_for_update: 500})` (defining `dataLayer` and a `gtag` shim only if missing), plus `ads_data_redaction` / `url_passthrough` if chosen. A returning visitor's choices follow immediately as `gtag('consent', 'update', …)`, and every decision or withdrawal sends another update.
+- Each purpose maps to Google consent types (defaults: analytics → `analytics_storage`; marketing/advertising → `ad_storage`, `ad_user_data`, `ad_personalization`; essential → `functionality_storage`). A type is granted only when every purpose mapped to it is granted (`src/lib/consent-mode.ts`, shared with the widget).
+- Meta: `fbq('consent', 'revoke')` by default and `'grant'` once the purposes mapped to `ad_storage` are granted. If the Pixel loads later, the call is queued ahead of its `fbq('init')`.
+- The site's settings are cached in localStorage so defaults are set synchronously on later page views; `data-hp-consent-mode` covers a visitor's very first page view.
+
+### Form consent
+
+```html
+<form action="/enquiry" method="post" data-hp-consent="contact,marketing" data-hp-required="contact">
+```
+
+- `widget/src/forms.js` (bundled into `widget.js`) adds one unticked checkbox per purpose just above the submit button, labelled in the visitor's language, with a link to the notice. `data-hp-consent=""` uses the purposes chosen on the site's **Forms** tab; `off` skips a form. `data-hp-required` overrides which boxes must be ticked (`*` for all).
+- "Protect forms automatically" (Forms tab) does the same for any form asking for an email, phone number or name; search, login and password forms are skipped.
+- A missing required box blocks the submit with an inline message. Otherwise the site's own submission carries on (normal POST or JS handlers listening for `submit`); the choice is sent by `sendBeacon` with `source: "form"`, the form's id/name/action path and a client-generated UUID receipt. The same UUID goes to the site's backend in a hidden `hp_consent_id` field and in a `highpre:form-consent` event, so each lead can be stored with its proof. Receipts are unique in the ledger and covered by the record hash.
+- Not covered: forms sent with `form.submit()` or a click handler that never fires a submit event.
 
 ## Desktop agent
 
@@ -292,7 +324,7 @@ live in a root-owned folder and are updated by redeploying the package.
 
 ## Security notes
 
-- Scanner blocks private/internal addresses at connect time (prevents SSRF and DNS rebinding), caps size, time and redirects.
+- Scanner blocks private/internal addresses at connect time (prevents SSRF and DNS rebinding), caps size, time and redirects. The TLS certificate check uses the same guarded DNS lookup with a 5-second timeout.
 - Rate limits are stored in MongoDB (atomic, TTL-expired), so they hold across instances; if the database is unreachable they fall back to per-process counters.
 - Passwords use bcrypt (cost 12); sessions are HS256 JWTs in HttpOnly, SameSite=Lax cookies carrying a session version: changing or resetting a password, or "Sign out everywhere", invalidates every other session.
 - Two-factor sign-in: TOTP (RFC 6238, SHA-1, 6 digits, ±1 step) on `node:crypto`; secrets are AES-256-GCM encrypted (key derived from `SESSION_SECRET`) and never selected by default; a used time step can't be replayed. After the password a 5-minute signed `hp_2fa` cookie (not a session) leads to the code step, rate-limited per user and per IP. Recovery codes are stored as SHA-256 hashes and removed on use. Turning 2FA on or off signs out other sessions, is logged in the activity log and emailed to the user. Password reset never signs anyone in.

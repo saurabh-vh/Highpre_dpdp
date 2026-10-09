@@ -98,6 +98,10 @@ export const bn: Locale = {
     essentialOnly: "শুধু প্রয়োজনীয় সুবিধা নিয়ে এগিয়ে যান",
     waitingParent: "বাবা-মা বা অভিভাবকের উত্তরের অপেক্ষা করা হচ্ছে।",
     notForChildren: "18 বছরের কম বয়সীদের জন্য উপলব্ধ নয়",
+    formLegend: "আমি সম্মত যে আমার তথ্য এগুলির জন্য ব্যবহার করা যেতে পারে:",
+    formRequired: "আবশ্যক",
+    formOptional: "ঐচ্ছিক",
+    formError: "এগিয়ে যেতে অনুগ্রহ করে আবশ্যক সম্মতির বাক্সে টিক দিন।",
   },
   portal: {
     title: (business) => `${business}-এর কাছে অনুরোধ করুন`,

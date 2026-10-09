@@ -1,5 +1,6 @@
 import { connectDb } from "@/lib/db";
 import { json, limitOrNull } from "@/lib/http";
+import { savePublicReport } from "@/lib/public-scan/store";
 import { scanErrorMessage, scanWebsite } from "@/lib/scanner";
 import { publicScanSchema } from "@/lib/validation";
 import { Scan } from "@/models";
@@ -18,7 +19,9 @@ export async function POST(req: Request) {
     const result = await scanWebsite(parsed.data.url);
     await connectDb();
     await Scan.create({ status: "complete", ...result });
-    return json(result);
+    // Shareable /scan/r/<id> snapshot; the scan still succeeds if it can't be saved.
+    const reportId = await savePublicReport(result);
+    return json({ ...result, reportId });
   } catch (error) {
     return json({ error: scanErrorMessage(error) }, { status: 422 });
   }

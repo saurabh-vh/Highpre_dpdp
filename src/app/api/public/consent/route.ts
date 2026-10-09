@@ -35,11 +35,20 @@ export async function POST(req: Request) {
   // A self-declared child gets essential purposes only: anything more needs a parent (see /api/public/parental).
   const child = Boolean(site.children?.enabled) && event.ageGroup === "child";
   const known = new Map(site.purposes.map((p) => [p.key, p.essential]));
+  // A form's checkboxes are recorded exactly as ticked: there's no "always on" box on a form.
+  const fromForm = event.source === "form";
   const decisions = event.decisions
     .filter((d) => known.has(d.purpose))
-    .map((d) => ({ purpose: d.purpose, granted: known.get(d.purpose) ? true : child ? false : d.granted }));
+    .map((d) => ({ purpose: d.purpose, granted: !fromForm && known.get(d.purpose) ? true : child ? false : d.granted }));
+  if (fromForm && decisions.length === 0) return json({ error: "Invalid consent event" }, { status: 422, cors: true });
 
-  await appendConsent({
+  // Form submissions get their own, tighter bucket on top of the shared one.
+  if (fromForm) {
+    const formLimited = await limitOrNull(req, "consent-form", 20, 60_000, true);
+    if (formLimited) return formLimited;
+  }
+
+  const record = {
     siteId: site._id,
     principalId: event.principalId,
     action: event.action,
@@ -50,7 +59,14 @@ export async function POST(req: Request) {
     pageUrl: event.pageUrl?.slice(0, 500),
     ipHash: hashIp(clientIp(req)),
     userAgent: req.headers.get("user-agent")?.slice(0, 300),
-  });
+  };
+  try {
+    await appendConsent(fromForm ? { ...record, source: "form", formId: event.formId, receiptId: event.receiptId } : record);
+  } catch (error) {
+    // The receipt id is unique: a replayed form submission is not recorded twice.
+    if ((error as { code?: number }).code === 11000) return json({ error: "Receipt already recorded" }, { status: 409, cors: true });
+    throw error;
+  }
 
   return json({ ok: true }, { status: 201, cors: true });
 }

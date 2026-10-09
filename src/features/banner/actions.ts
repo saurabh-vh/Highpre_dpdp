@@ -13,9 +13,19 @@ export async function saveBannerAction(siteId: string, _prev: ActionState, formD
   const { org, user, role } = await requireAuth();
   if (!can(role, "content.edit")) return fail(denied("content.edit"));
   const site = await requireSite(siteId);
+  const fields = Object.fromEntries([...formData].filter(([k]) => !k.startsWith("gcm:")));
+  const layout = formData.get("layout");
   const parsed = bannerSchema.safeParse({
-    ...Object.fromEntries(formData),
+    ...fields,
+    // The bar is always full width; the box and popup keep a corner for the settings button.
+    position: layout === "bar" ? "bottom" : formData.get("position") === "bottom-left" ? "bottom-left" : "bottom-right",
     showReopenButton: formData.get("showReopenButton") === "on",
+    googleConsentMode: formData.get("googleConsentMode") === "on",
+    metaPixelConsent: formData.get("metaPixelConsent") === "on",
+    adsDataRedaction: formData.get("adsDataRedaction") === "on",
+    urlPassthrough: formData.get("urlPassthrough") === "on",
+    // One checkbox per purpose and Google consent type, named gcm:<purpose key>.
+    consentTypes: site.purposes.map((p) => ({ purpose: p.key, types: formData.getAll(`gcm:${p.key}`).map(String) })),
   });
   if (!parsed.success) return fromZodError(parsed.error);
 

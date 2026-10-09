@@ -1,11 +1,15 @@
 import "server-only";
 import { analyzePage } from "./analyze";
+import { fetchCertificate } from "./cert";
 import { ScanFetchError, normalizeUrl, safeFetchPage } from "./safe-fetch";
+import { checkCookies, checkHeaders, securityFindings, type SecurityReport } from "./security";
 import type { TrackerSignature } from "./signatures";
 
 export { ScanFetchError } from "./safe-fetch";
+export type { SecurityReport } from "./security";
 
-export type Finding = { id: string; severity: "critical" | "warning" | "pass"; title: string; detail: string };
+/** `group: "security"` marks the safeguards checks, shown and scored separately. */
+export type Finding = { id: string; severity: "critical" | "warning" | "pass"; title: string; detail: string; group?: "security" };
 
 export type ScanResult = {
   url: string;
@@ -18,10 +22,14 @@ export type ScanResult = {
   consentTool?: string;
   /** Icon declared by the homepage, or the conventional /favicon.ico. */
   faviconUrl: string;
+  security: SecurityReport;
   findings: Finding[];
 };
 
 const MAX_EXTRA_PAGES = 4;
+const MIXED_CONTENT_EXAMPLES = 3;
+/** Security matters, but a DPDP readiness score shouldn't be dominated by header hygiene. */
+const SECURITY_PENALTY_CAP = 20;
 
 /**
  * Scans a homepage plus a few pages likely to contain forms, then turns the
@@ -34,8 +42,13 @@ export async function scanWebsite(input: string): Promise<ScanResult> {
   const home = await safeFetchPage(start);
   const homeAnalysis = analyzePage(home.html, home.url);
 
+  const https = new URL(home.url).protocol === "https:";
+
   const extraUrls = homeAnalysis.candidateLinks.filter((u) => u !== home.url).slice(0, MAX_EXTRA_PAGES);
-  const extraPages = await Promise.allSettled(extraUrls.map((u) => safeFetchPage(u)));
+  const [extraPages, certificate] = await Promise.all([
+    Promise.allSettled(extraUrls.map((u) => safeFetchPage(u))),
+    https ? fetchCertificate(home.url) : Promise.resolve(undefined),
+  ]);
 
   const pages = [{ page: home, analysis: homeAnalysis }];
   for (const result of extraPages) {
@@ -48,6 +61,9 @@ export async function scanWebsite(input: string): Promise<ScanResult> {
   let privacyNoticeUrl: string | undefined;
   let consentTool: string | undefined;
   let mentionsGrievance = false;
+  const mixedContent = new Set<string>();
+  const insecureForms = new Set<string>();
+  const setCookies: string[] = [];
 
   for (const { page, analysis } of pages) {
     analysis.trackers.forEach((t) => trackerMap.set(t.id, t));
@@ -57,20 +73,23 @@ export async function scanWebsite(input: string): Promise<ScanResult> {
       if (!forms.some((x) => x.fields.join() === fields.join())) forms.push({ page: page.url, fields });
     }
     page.setCookies.forEach((c) => cookies.add(c.split("=")[0].trim()));
+    setCookies.push(...page.setCookies);
+    analysis.mixedContent.forEach((u) => mixedContent.add(u));
+    analysis.insecureForms.forEach((u) => insecureForms.add(u));
     privacyNoticeUrl ??= analysis.privacyLink;
     consentTool ??= analysis.consentTool;
     mentionsGrievance ||= analysis.mentionsGrievance;
   }
 
   const trackers = [...trackerMap.values()].map(({ id, name, category }) => ({ id, name, category }));
-  const findings = buildFindings({
-    https: new URL(home.url).protocol === "https:",
-    trackers,
-    forms,
-    privacyNoticeUrl,
-    consentTool,
-    mentionsGrievance,
-  });
+  const security: SecurityReport = {
+    headers: checkHeaders(home.headers, https),
+    ...(certificate ? { certificate } : {}),
+    mixedContent: { count: mixedContent.size, examples: [...mixedContent].slice(0, MIXED_CONTENT_EXAMPLES) },
+    insecureForms: [...insecureForms],
+    insecureCookies: checkCookies(setCookies, https),
+  };
+  const findings = buildFindings({ https, trackers, forms, privacyNoticeUrl, consentTool, mentionsGrievance, security });
 
   return {
     url: home.url,
@@ -82,6 +101,7 @@ export async function scanWebsite(input: string): Promise<ScanResult> {
     privacyNoticeUrl,
     consentTool,
     faviconUrl: homeAnalysis.iconUrl ?? new URL("/favicon.ico", home.url).toString(),
+    security,
     findings,
   };
 }
@@ -93,6 +113,7 @@ export function buildFindings(s: {
   privacyNoticeUrl?: string;
   consentTool?: string;
   mentionsGrievance: boolean;
+  security?: SecurityReport;
 }): Finding[] {
   const out: Finding[] = [];
   const nonEssential = s.trackers.filter((t) => t.category !== "support");
@@ -137,12 +158,16 @@ export function buildFindings(s: {
       : { id: "no_https", severity: "critical", title: "Not served over HTTPS", detail: "Personal data submitted on this site travels unencrypted. Enable HTTPS." },
   );
 
+  if (s.security) out.push(...securityFindings(s.security, s.https));
+
   const order = { critical: 0, warning: 1, pass: 2 } as const;
   return out.sort((a, b) => order[a.severity] - order[b.severity]);
 }
 
 export function scoreFindings(findings: Finding[]): number {
-  const penalty = findings.reduce((sum, f) => sum + (f.severity === "critical" ? 25 : f.severity === "warning" ? 10 : 0), 0);
+  const penaltyOf = (list: Finding[]) => list.reduce((sum, f) => sum + (f.severity === "critical" ? 25 : f.severity === "warning" ? 10 : 0), 0);
+  const security = Math.min(SECURITY_PENALTY_CAP, penaltyOf(findings.filter((f) => f.group === "security")));
+  const penalty = penaltyOf(findings.filter((f) => f.group !== "security")) + security;
   return Math.max(0, Math.min(100, 100 - penalty));
 }
 

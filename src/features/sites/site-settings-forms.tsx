@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { LANGUAGES } from "@/lib/i18n/languages";
 import { useActionForm } from "@/lib/hooks/use-action-form";
 import { cn } from "@/lib/utils";
-import { saveChildrenSettingsAction, saveSiteLanguagesAction, updateSiteAction } from "./actions";
+import { saveChildrenSettingsAction, saveMonitoringSettingsAction, saveSiteLanguagesAction, updateSiteAction } from "./actions";
 
 export function SiteDetailsForm({ siteId, name, url, readOnly }: { siteId: string; name: string; url: string; readOnly: boolean }) {
   const { state, pending, formProps } = useActionForm(updateSiteAction.bind(null, siteId));
@@ -84,6 +84,27 @@ export function ChildrenForm({ siteId, enabled, readOnly }: { siteId: string; en
         name="enabled"
         label="Ask visitors their age and collect parental consent"
         description="Under-18s get essential features only until a parent or guardian verifies their email and agrees. Tracking and targeted ads stay off for children even then (DPDP section 9)."
+        defaultChecked={enabled}
+        disabled={readOnly}
+      />
+      {!readOnly && (
+        <div className="flex items-center justify-end gap-3">
+          <FormMessage state={state} className="mr-auto" />
+          <SubmitButton pending={pending} pendingLabel="Saving">Save</SubmitButton>
+        </div>
+      )}
+    </form>
+  );
+}
+
+export function MonitoringForm({ siteId, enabled, readOnly }: { siteId: string; enabled: boolean; readOnly: boolean }) {
+  const { state, pending, formProps } = useActionForm(saveMonitoringSettingsAction.bind(null, siteId));
+  return (
+    <form {...formProps} className="space-y-5">
+      <Switch
+        name="enabled"
+        label="Rescan this website every week"
+        description="Owners and admins get an email when a new tracker appears, the consent banner or privacy notice link disappears, HTTPS or the SSL certificate has a problem, or the score drops by 10 points or more. At most one email a day per website."
         defaultChecked={enabled}
         disabled={readOnly}
       />

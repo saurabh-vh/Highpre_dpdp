@@ -98,6 +98,10 @@ export const gu: Locale = {
     essentialOnly: "ફક્ત આવશ્યક સુવિધાઓ સાથે આગળ વધો",
     waitingParent: "માતા-પિતા અથવા વાલીના જવાબની રાહ જોવાઈ રહી છે.",
     notForChildren: "18 વર્ષથી ઓછી ઉંમરના લોકો માટે ઉપલબ્ધ નથી",
+    formLegend: "હું સંમત છું કે મારી વિગતોનો ઉપયોગ આ માટે થઈ શકે છે:",
+    formRequired: "જરૂરી",
+    formOptional: "વૈકલ્પિક",
+    formError: "આગળ વધવા માટે કૃપા કરીને જરૂરી સંમતિ બોક્સ પર ટિક કરો.",
   },
   portal: {
     title: (business) => `${business} ને વિનંતી મોકલો`,

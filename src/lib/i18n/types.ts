@@ -68,6 +68,11 @@ export type WidgetStrings = {
   essentialOnly: string;
   waitingParent: string;
   notForChildren: string;
+  /** Consent checkboxes on the website's own forms (widget/src/forms.js). */
+  formLegend: string;
+  formRequired: string;
+  formOptional: string;
+  formError: string;
 };
 
 export type PortalStrings = {

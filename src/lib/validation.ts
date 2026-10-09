@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { BREACH_SEVERITIES, DATA_CATEGORY_VALUES, REQUEST_STATUS_VALUES, REQUEST_TYPE_VALUES } from "./constants";
 import { LANG_CODES } from "./i18n/languages";
+import { BANNER_LAYOUTS, safeFontFamily } from "./banner-layout";
+import { GOOGLE_CONSENT_TYPES } from "./consent-mode";
 import { DPA_STATUS_VALUES, VENDOR_CATEGORY_VALUES } from "./vendors/constants";
 
 const email = z.string().trim().toLowerCase().email("Enter a valid email address.");
@@ -59,6 +61,8 @@ export const purposeSchema = z.object({
   sharedWith: z.string().trim().max(200).optional().default(""),
 });
 
+const hexColor = z.union([z.literal(""), z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a colour like #1a73e8.")]).default("");
+
 export const bannerSchema = z.object({
   position: z.enum(["bottom", "bottom-left", "bottom-right"]),
   theme: z.enum(["dark", "light"]),
@@ -66,6 +70,21 @@ export const bannerSchema = z.object({
   message: z.string().trim().min(10).max(300),
   defaultLanguage: z.enum(LANG_CODES),
   showReopenButton: z.boolean(),
+  layout: z.enum(BANNER_LAYOUTS),
+  primaryColor: hexColor,
+  backgroundColor: hexColor,
+  textColor: hexColor,
+  fontFamily: z
+    .string()
+    .trim()
+    .max(200)
+    .refine((v) => v === "" || safeFontFamily(v) !== "", "Use font names only, separated by commas.")
+    .default(""),
+  googleConsentMode: z.boolean(),
+  metaPixelConsent: z.boolean(),
+  adsDataRedaction: z.boolean(),
+  urlPassthrough: z.boolean(),
+  consentTypes: z.array(z.object({ purpose: z.string().max(40), types: z.array(z.enum(GOOGLE_CONSENT_TYPES)) })).max(50),
 });
 
 export const siteLanguagesSchema = z.object({
@@ -179,6 +198,25 @@ export const consentEventSchema = z.object({
   language: z.enum(LANG_CODES).default("en"),
   ageGroup: z.enum(["adult", "child"]).optional(),
   pageUrl: z.string().max(500).optional(),
+  /** Form consent (widget/src/forms.js): which form, and the receipt id the form submits as hp_consent_id. */
+  source: z.enum(["banner", "form"]).default("banner"),
+  formId: z.string().trim().min(1).max(100).regex(/^[^\u0000-\u001f\u007f]+$/).optional(),
+  receiptId: z.string().uuid().optional(),
+}).superRefine((e, ctx) => {
+  if (e.source === "form") {
+    if (!e.formId) ctx.addIssue({ code: "custom", path: ["formId"], message: "Form consent needs a form id." });
+    if (!e.receiptId) ctx.addIssue({ code: "custom", path: ["receiptId"], message: "Form consent needs a receipt id." });
+    if (e.action !== "grant") ctx.addIssue({ code: "custom", path: ["action"], message: "Form consent is recorded as a grant." });
+  } else if (e.formId || e.receiptId) {
+    ctx.addIssue({ code: "custom", path: ["source"], message: "Form fields are only for form consent." });
+  }
+});
+
+/** Dashboard settings for consent checkboxes on the website's own forms. */
+export const formSettingsSchema = z.object({
+  autoProtect: z.boolean(),
+  purposes: z.array(z.string().max(40)).max(30),
+  requiredPurposes: z.array(z.string().max(40)).max(30),
 });
 
 export const otpRequestSchema = z.object({

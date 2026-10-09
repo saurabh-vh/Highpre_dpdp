@@ -1,13 +1,30 @@
 import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type FindingView = { id: string; severity: "critical" | "warning" | "pass"; title: string; detail: string };
+export type FindingView = { id: string; severity: "critical" | "warning" | "pass"; title: string; detail: string; group?: string | null };
 
 const icon = { critical: CircleAlert, warning: TriangleAlert, pass: CircleCheck } as const;
 const label = { critical: "Must fix", warning: "Review", pass: "Looks good" } as const;
 
-/** Prioritised list of scan findings. Shared by the public report and the dashboard. */
+/**
+ * Prioritised list of scan findings, with the security safeguards checks in
+ * their own group below. Shared by the public report and the dashboard.
+ */
 export function ScanFindings({ findings }: { findings: FindingView[] }) {
+  const security = findings.filter((f) => f.group === "security");
+  if (security.length === 0) return <FindingList findings={findings} />;
+  return (
+    <div className="space-y-8">
+      <FindingList findings={findings.filter((f) => f.group !== "security")} />
+      <div>
+        <h3 className="mb-5 border-t border-white/[0.08] pt-6 text-2xs font-medium uppercase tracking-wider text-mist">Security</h3>
+        <FindingList findings={security} />
+      </div>
+    </div>
+  );
+}
+
+function FindingList({ findings }: { findings: FindingView[] }) {
   return (
     <ul className="divide-y divide-white/[0.08]">
       {findings.map((f) => {

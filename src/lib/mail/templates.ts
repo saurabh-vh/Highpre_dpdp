@@ -216,3 +216,36 @@ export function twoFactorChangedEmail(opts: { to: string; name: string; event: "
     ),
   };
 }
+
+export function scanReportEmail(opts: { to: string; site: string; score: number; reportUrl: string; signupUrl: string; pdf: Uint8Array; filename: string }): Mail {
+  return {
+    to: opts.to,
+    subject: `Your HighPre privacy scan for ${opts.site}`,
+    text: `Your privacy scan report for ${opts.site} (score ${opts.score}/100) is attached as a PDF. View it online for 30 days: ${opts.reportUrl}\n\nFix the gaps with HighPre: ${opts.signupUrl}\n\nYou're getting this email because you asked for this report. We won't email you again unless you opted in to product updates.`,
+    html: layout(
+      "Your privacy scan report",
+      `<p>The report for <strong>${escape(opts.site)}</strong> is attached as a PDF. It scored <strong>${opts.score}/100</strong>.</p>
+       <p>You can also <a href="${opts.reportUrl}" style="color:#000">view it online</a> for 30 days.</p>
+       ${button(opts.signupUrl, "Fix these with HighPre")}
+       <p style="color:#8e8e93">You're getting this email because you asked for this report. We won't email you again unless you opted in to product updates.</p>`,
+    ),
+    attachments: [{ filename: opts.filename, content: opts.pdf, contentType: "application/pdf" }],
+  };
+}
+
+export function siteChangesAlertEmail(opts: { to: string; siteName: string; changes: { severity: string; message: string }[]; url: string }): Mail {
+  const critical = opts.changes.some((c) => c.severity === "critical");
+  const lines = opts.changes.map((c) => `${c.severity === "critical" ? "Must fix: " : c.severity === "warning" ? "Review: " : ""}${c.message}`);
+  return {
+    to: opts.to,
+    subject: `${critical ? "Action needed" : "Changes found"} on ${opts.siteName} — weekly scan`,
+    text: `HighPre's weekly scan of ${opts.siteName} found changes since the previous scan:\n${lines.map((l) => `- ${l}`).join("\n")}\n\nSee the full scan: ${opts.url}`,
+    html: layout(
+      critical ? "Your website needs attention" : "Your website changed",
+      `<p>HighPre's weekly scan of <strong>${escape(opts.siteName)}</strong> found changes since the previous scan:</p>
+       <ul style="padding-left:18px">${lines.map((l) => `<li>${escape(l)}</li>`).join("")}</ul>
+       ${button(opts.url, "Open the scan")}
+       <p style="color:#8e8e93">You can turn weekly monitoring off in the website's settings.</p>`,
+    ),
+  };
+}

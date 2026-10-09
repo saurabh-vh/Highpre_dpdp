@@ -100,6 +100,10 @@ export const en: Locale = {
     essentialOnly: "Continue with essentials only",
     waitingParent: "Waiting for a parent or guardian to respond.",
     notForChildren: "Not available for under-18s",
+    formLegend: "I agree that my details may be used for:",
+    formRequired: "required",
+    formOptional: "optional",
+    formError: "Please tick the required consent box to continue.",
   },
   portal: {
     title: (business) => `Make a request to ${business}`,

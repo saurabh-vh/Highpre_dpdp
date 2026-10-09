@@ -37,6 +37,7 @@ export default async function SiteLayout({ children, params }: { children: React
           { segment: "/banner", label: "Consent banner", done: Boolean(site.widgetLastSeenAt) },
         ]}
         extras={[
+          { segment: "/forms", label: "Forms" },
           { segment: "/consents", label: "Consent records" },
           { segment: "/analytics", label: "Analytics" },
           { segment: "/settings", label: "Settings" },

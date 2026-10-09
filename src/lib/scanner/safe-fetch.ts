@@ -26,6 +26,8 @@ export type FetchedPage = {
   status: number;
   html: string;
   setCookies: string[];
+  /** Headers of the final response (after redirects), for the security checks. */
+  headers: http.IncomingHttpHeaders;
 };
 
 function isPrivateIPv4(ip: string): boolean {
@@ -53,8 +55,8 @@ export function isPrivateIp(ip: string): boolean {
   return true;
 }
 
-/** DNS lookup that refuses to hand private addresses to the socket. */
-const guardedLookup: net.LookupFunction = (hostname, options, callback) => {
+/** DNS lookup that refuses to hand private addresses to the socket. Shared with the TLS certificate check. */
+export const guardedLookup: net.LookupFunction = (hostname, options, callback) => {
   dnsLookup(hostname, { ...options, all: true }, (err, addresses) => {
     if (err) return callback(err, "", 0);
     const list = addresses as unknown as LookupAddress[];
@@ -175,6 +177,7 @@ export async function safeFetchPage(input: string | URL): Promise<FetchedPage> {
     status: res.status,
     html: decode(res.body, res.headers["content-encoding"] as string | undefined),
     setCookies: res.setCookies,
+    headers: res.headers,
   };
 }
 
@@ -195,6 +198,17 @@ export async function safeFetchImage(input: string | URL): Promise<{ contentType
     const encoding = res.headers["content-encoding"] as string | undefined;
     const data = encoding ? Buffer.from(decodeBuffer(res.body, encoding)) : res.body;
     return { contentType, data };
+  } catch {
+    return null;
+  }
+}
+
+/** Fetches a small text resource (a stylesheet or web manifest) with the same protections, or null. */
+export async function safeFetchText(input: string | URL, accept: string, maxBytes = 300_000): Promise<string | null> {
+  try {
+    const res = await fetchFollowing(input, accept, maxBytes, 6_000);
+    if (res.status !== 200) return null;
+    return decode(res.body, res.headers["content-encoding"] as string | undefined);
   } catch {
     return null;
   }

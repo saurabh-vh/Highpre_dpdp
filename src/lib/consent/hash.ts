@@ -14,11 +14,15 @@ export type HashableConsent = {
   language?: string | null;
   ageGroup?: string | null;
   parentalConsentId?: string | null;
+  /** Form consent fields. Absent on banner records, which then hash exactly as before. */
+  source?: string | null;
+  formId?: string | null;
+  receiptId?: string | null;
   createdAt: Date;
 };
 
 export function consentHash(r: HashableConsent): string {
-  const canonical = JSON.stringify([
+  const fields: unknown[] = [
     r.siteId,
     r.principalId,
     r.action,
@@ -28,7 +32,10 @@ export function consentHash(r: HashableConsent): string {
     r.ageGroup ?? "",
     r.parentalConsentId ?? "",
     r.createdAt.toISOString(),
-  ]);
+  ];
+  // Appended only when present, so records written before form consent still verify.
+  if (r.source || r.formId || r.receiptId) fields.push(r.source ?? "", r.formId ?? "", r.receiptId ?? "");
+  const canonical = JSON.stringify(fields);
   return createHash("sha256").update(canonical).digest("hex");
 }
 
