@@ -41,7 +41,8 @@ services:
       - |
         sleep 60
         while true; do
-          curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://app:3000/api/cron/run || echo "cron run failed"
+          # One timestamped line per run, so `docker compose logs cron` shows it working.
+          echo "$$(date -Iseconds) $$(curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://app:3000/api/cron/run || echo 'cron run failed')"
           sleep 3600
         done
 
