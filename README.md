@@ -171,10 +171,17 @@ are server actions in `features/*/actions.ts` returning `ActionState`; forms use
 
 ## How the consent widget works
 
-```html
-<script src="https://yourdomain.com/widget.js" data-hp-site="SITE_KEY" async></script>
+Customers paste **one line**, high in the `<head>`:
 
-<!-- Trackers wait for consent: change type and add the purpose key -->
+```html
+<script src="https://yourdomain.com/s/SITE_KEY.js"></script>
+```
+
+`/s/<siteKey>.js` (`src/app/s/[file]/route.ts`) is `public/widget.js` with the site key and its Google/Meta consent settings embedded (`window.__HP_BOOT`), cached for 5 minutes. Everything else is switched on from the dashboard, with no extra tags or attributes: the banner (once a notice is published), form checkboxes (**Forms** → Protect forms automatically), the privacy centre badge (**Settings** → Privacy centre) and Google Consent Mode / Meta Pixel signals (**Consent banner**). The older `widget.js` + `data-hp-site` snippet still works.
+
+Optional, for scripts you want blocked completely until consent:
+
+```html
 <script type="text/plain" data-hp-purpose="analytics" src="https://www.googletagmanager.com/gtag/js?id=G-XXXX"></script>
 ```
 
@@ -191,17 +198,18 @@ are server actions in `features/*/actions.ts` returning `ActionState`; forms use
 
 ### Google Consent Mode v2 and Meta Pixel
 
-Turn these on under **Consent banner**. The widget must then run **before** the Google tag, GTM and the Pixel, and **without `async`**:
+Turn these on under **Consent banner**. The one-line script must sit **above** the Google tag, GTM and the Pixel (it has no `async`, so it runs first):
 
 ```html
-<script src="https://yourdomain.com/widget.js" data-hp-site="SITE_KEY" data-hp-consent-mode></script>
+<script src="https://yourdomain.com/s/SITE_KEY.js"></script>
 <!-- then the Google tag / GTM snippet and the Meta Pixel base code, unchanged -->
 ```
 
 - On load it calls `gtag('consent', 'default', {…all denied…, security_storage: 'granted', wait_for_update: 500})` (defining `dataLayer` and a `gtag` shim only if missing), plus `ads_data_redaction` / `url_passthrough` if chosen. A returning visitor's choices follow immediately as `gtag('consent', 'update', …)`, and every decision or withdrawal sends another update.
 - Each purpose maps to Google consent types (defaults: analytics → `analytics_storage`; marketing/advertising → `ad_storage`, `ad_user_data`, `ad_personalization`; essential → `functionality_storage`). A type is granted only when every purpose mapped to it is granted (`src/lib/consent-mode.ts`, shared with the widget).
 - Meta: `fbq('consent', 'revoke')` by default and `'grant'` once the purposes mapped to `ad_storage` are granted. If the Pixel loads later, the call is queued ahead of its `fbq('init')`.
-- The site's settings are cached in localStorage so defaults are set synchronously on later page views; `data-hp-consent-mode` covers a visitor's very first page view.
+- The per-site script carries the current settings, so the defaults are set synchronously even on a visitor's first page view. (With the older `widget.js` snippet, settings are cached in localStorage and `data-hp-consent-mode` covers the first view.)
+- **Badge:** when switched on, the widget draws the privacy centre badge (an `<img>` of `/p/<siteKey>/badge.svg` linking to the privacy centre) inside any element with `data-hp-badge`, otherwise centred at the end of the page or fixed in the corner opposite the settings button.
 
 ### Form consent
 

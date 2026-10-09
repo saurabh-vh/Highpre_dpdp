@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { AppWindow, Laptop, ShieldCheck, ShieldOff } from "lucide-react";
+import { AppWindow, BellRing, Laptop, LockKeyhole, ShieldCheck, TriangleAlert } from "lucide-react";
+import { AgentHowItWorksIllustration, CompanyInstallIllustration, ExtensionIllustration } from "@/components/illustrations/feature-illustrations";
 import { Badge } from "@/components/ui/badge";
 import { Callout } from "@/components/ui/callout";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -69,43 +70,62 @@ export default async function AgentPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader
         title="Desktop agent"
-        description="Stops passwords, keys, card numbers and ID numbers from being pasted into AI assistants and chat apps by mistake. Detection runs on each computer and in each browser; HighPre only learns what kind of data, which app and what the person chose."
+        description="Stops your team from pasting passwords, card numbers and other private data into ChatGPT, WhatsApp and similar apps by mistake."
       />
 
       <div className="space-y-6">
         <Panel>
-          <PanelHeader title="Install on your computer" description="Each download is linked to you. Use the desktop agent, the browser extension, or both." />
+          <PanelHeader title="How it works" />
+          <PanelBody className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-center">
+            <AgentHowItWorksIllustration />
+            <ol className="space-y-4">
+              {[
+                { icon: TriangleAlert, title: "Warns on screen", text: "If someone copies a password or card number while an AI or chat app is open." },
+                { icon: BellRing, title: "Tells the owner", text: "Who, which app and what kind of data. You get an email too." },
+                { icon: LockKeyhole, title: "Private data stays private", text: "What they copied never leaves their computer. HighPre never sees it." },
+              ].map((step) => (
+                <li key={step.title} className="flex gap-3">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/[0.06]">
+                    <step.icon className="size-4 text-fog" aria-hidden />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-medium">{step.title}</span>
+                    <span className="block text-xs text-mist">{step.text}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </PanelBody>
+        </Panel>
+
+        <Panel>
+          <PanelHeader title="Install" description="Download it on your computer. Each copy is linked to you." />
           <PanelBody className="space-y-5">
             <AgentDownloads />
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-field border border-line p-4">
-                <p className="flex items-center gap-2 text-sm font-medium"><ShieldCheck className="size-4 text-success" aria-hidden />What it does</p>
-                <ul className="mt-2 space-y-1.5 text-xs text-mist">
-                  <li>Looks for passwords, API keys, private keys, card and bank details, Aadhaar, PAN, passport numbers and customer lists.</li>
-                  <li><strong className="font-medium text-fog">Desktop agent:</strong> warns when that&apos;s on the clipboard while ChatGPT, Claude, Gemini, Copilot, WhatsApp, Slack or a similar app is open.</li>
-                  <li><strong className="font-medium text-fog">Browser extension:</strong> asks before it&apos;s pasted, dropped or sent on those sites, typed messages included.</li>
-                  <li>Owners get an email and see the alert here: who, which computer, what kind of data, which app, and what they chose.</li>
-                </ul>
+              <div className="flex items-center gap-4 rounded-field border border-line p-4">
+                <ExtensionIllustration className="w-40 shrink-0 border-0 bg-transparent p-0" />
+                <p className="text-xs text-mist">
+                  <span className="block text-sm font-medium text-paper">Browser extension</span>
+                  Catches pasting and typing in ChatGPT, Gemini, WhatsApp Web and more.
+                </p>
               </div>
-              <div className="rounded-field border border-line p-4">
-                <p className="flex items-center gap-2 text-sm font-medium"><ShieldOff className="size-4 text-info" aria-hidden />What it never does</p>
-                <ul className="mt-2 space-y-1.5 text-xs text-mist">
-                  <li>Never sends the text, or anything derived from it, to HighPre.</li>
-                  <li>Doesn&apos;t record keystrokes, screenshots, browsing history or window titles. The extension runs only on the sites it protects.</li>
-                  <li>Installs for one user without admin rights and can be removed from Settings → Apps (Windows), with the uninstaller (Mac) or from the browser&apos;s extensions page.</li>
-                </ul>
+              <div className="flex items-center gap-4 rounded-field border border-line p-4">
+                <Laptop className="size-8 shrink-0 text-fog" aria-hidden />
+                <p className="text-xs text-mist">
+                  <span className="block text-sm font-medium text-paper">Desktop app</span>
+                  Also covers the ChatGPT, WhatsApp and Slack apps. Use both for the best protection.
+                </p>
               </div>
             </div>
-            <Callout tone="info">
-              Tell your team before they install it: it tells people when they&apos;re warned, and owners see those warnings. On macOS, right-click the installer and choose Open the first time. The extension zip has install steps inside.
-            </Callout>
+            <Callout tone="info">Tell your team before they install it. On a Mac, right-click the installer and choose Open the first time.</Callout>
           </PanelBody>
         </Panel>
 
         <Panel>
           <PanelHeader
-            title={manager ? "Leak alerts" : "Your alerts"}
-            description={showAll ? "All alerts." : `${openCount} waiting for review.`}
+            title={manager ? "Alerts" : "Your alerts"}
+            description={showAll ? "All alerts." : openCount ? `${openCount} to review.` : "Nothing to review."}
             action={
               <div className="flex items-center gap-2">
                 <Link href={showAll ? "/dashboard/agent" : "/dashboard/agent?show=all"} className="text-xs text-mist hover:text-paper">
@@ -116,7 +136,7 @@ export default async function AgentPage({ searchParams }: { searchParams: Promis
             }
           />
           {alerts.length === 0 ? (
-            <EmptyState icon={ShieldCheck} title={showAll ? "No alerts yet" : "Nothing to review"} description="Alerts appear here when sensitive data heads for an AI or chat app." />
+            <EmptyState icon={ShieldCheck} title={showAll ? "No alerts yet" : "All clear"} description="You'll see an alert here if someone copies private data into an AI or chat app." />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -172,8 +192,8 @@ export default async function AgentPage({ searchParams }: { searchParams: Promis
         {manager && (
           <Panel>
             <PanelHeader
-              title="What to watch for"
-              description="Applies to every computer and browser in your organisation within 15 minutes. False-alarm rates come from people marking alerts as not sensitive over the last 90 days."
+              title="What to look for"
+              description="Changes reach every computer within 15 minutes."
             />
             <PanelBody>
               <AgentPolicyForm
@@ -192,25 +212,26 @@ export default async function AgentPage({ searchParams }: { searchParams: Promis
         {manager && (
           <Panel>
             <PanelHeader
-              title="Install across your company"
-              description="For IT teams: deploy one installer to every computer with Intune, Jamf, Kandji or a sign-in script. Each person's agent registers itself and appears below with the computer and sign-in name."
+              title="Install on all company computers"
+              description="For IT teams. Send one installer to every computer with Intune, Jamf or similar."
             />
-            <PanelBody>
-              <CompanyInstall enabled={policy.enrollmentEnabled} />
-              <p className="mt-4 text-2xs text-mist">
-                Each zip has deployment steps. Windows installs per user without admin rights{latest ? " and updates itself" : ""}; Mac installs for every user and is updated by redeploying. Anyone with the installer can add computers to your account, so keep it internal and replace the key if it leaks.
-              </p>
+            <PanelBody className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
+              <div>
+                <CompanyInstall enabled={policy.enrollmentEnabled} />
+                <p className="mt-4 text-2xs text-mist">Steps are inside the download. Keep the installer inside your company; if it leaks, click Replace key.</p>
+              </div>
+              <CompanyInstallIllustration className="md:w-60" />
             </PanelBody>
           </Panel>
         )}
 
         <Panel>
           <PanelHeader
-            title={manager ? "Devices" : "Your devices"}
-            description={`Every download and company install appears here. Remove a device to switch it off.${latest ? ` Latest desktop version: ${latest}, installed automatically.` : ""}`}
+            title={manager ? "Computers" : "Your computers"}
+            description={`Every computer with HighPre. Remove one to switch it off.${latest ? ` Updates install by themselves (latest ${latest}).` : ""}`}
           />
           {devices.length === 0 ? (
-            <EmptyState icon={Laptop} title="No devices yet" description="Download the agent or extension above to protect your first computer." />
+            <EmptyState icon={Laptop} title="No computers yet" description="Download HighPre above to protect your first computer." />
           ) : (
             <ul className="divide-y divide-white/[0.08]">
               {devices.map((d) => {

@@ -1,3 +1,4 @@
+import { MonitoringIllustration } from "@/components/illustrations/feature-illustrations";
 import { Callout } from "@/components/ui/callout";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { DeleteSiteForm } from "@/features/sites/delete-site-form";
@@ -38,11 +39,23 @@ export default async function SiteSettingsPage({ params }: { params: Promise<{ s
           {(site.publishedNoticeVersion ?? 0) === 0 && (
             <Callout tone="warning">The privacy centre goes live once you publish a privacy notice.</Callout>
           )}
-          <PrivacyCentreForm siteId={site.id} enabled={site.privacyCentre?.enabled !== false} showVendors={Boolean(site.privacyCentre?.showVendors)} readOnly={!canPublish} />
           <PrivacyCentreLinks
             url={`${env().APP_URL}/p/${site.siteKey}`}
-            badgeUrl={`${env().APP_URL}/p/${site.siteKey}/badge.svg`}
             live={(site.publishedNoticeVersion ?? 0) > 0 && site.privacyCentre?.enabled !== false}
+          />
+          <PrivacyCentreForm
+            siteId={site.id}
+            enabled={site.privacyCentre?.enabled !== false}
+            showVendors={Boolean(site.privacyCentre?.showVendors)}
+            badge={{
+              enabled: Boolean(site.privacyCentre?.badge?.enabled),
+              placement: site.privacyCentre?.badge?.placement === "corner" ? "corner" : "footer",
+              theme: site.privacyCentre?.badge?.theme === "dark" ? "dark" : "light",
+              size: site.privacyCentre?.badge?.size === "small" ? "small" : "regular",
+            }}
+            badgeUrl={`${env().APP_URL}/p/${site.siteKey}/badge.svg`}
+            centreUrl={`${env().APP_URL}/p/${site.siteKey}`}
+            readOnly={!canPublish}
           />
         </PanelBody>
       </Panel>
@@ -50,7 +63,12 @@ export default async function SiteSettingsPage({ params }: { params: Promise<{ s
       <Panel>
         <PanelHeader title="Weekly monitoring" description="HighPre rescans the website automatically and tells you what changed since the previous scan." />
         <PanelBody>
-          <MonitoringForm siteId={site.id} enabled={site.monitoring?.enabled !== false} readOnly={!canManage} />
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1">
+              <MonitoringForm siteId={site.id} enabled={site.monitoring?.enabled !== false} readOnly={!canManage} />
+            </div>
+            <MonitoringIllustration className="sm:w-56" />
+          </div>
         </PanelBody>
       </Panel>
 

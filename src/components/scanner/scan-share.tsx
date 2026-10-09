@@ -37,7 +37,7 @@ export function ScanShare({ reportId }: { reportId: string }) {
   }
 
   return (
-    <section className="glass rounded-panel p-6 sm:p-8">
+    <section className="glass min-w-0 rounded-panel p-5 sm:p-8">
       <h2 className="text-sm font-semibold">Keep this report</h2>
       <div className="mt-5">
         <p className="text-xs font-medium text-fog">Share link</p>
@@ -48,7 +48,7 @@ export function ScanShare({ reportId }: { reportId: string }) {
           </a>
           <CopyButton value={`${origin}${path}`} label="Copy link" />
         </div>
-        <p className="mt-2 text-2xs text-mist">Anyone with the link can view it for 30 days. It isn&apos;t listed in search engines.</p>
+        <p className="mt-2 text-xs text-mist sm:text-2xs">Anyone with the link can view it for 30 days. It isn&apos;t listed in search engines.</p>
       </div>
 
       <div className="mt-8 border-t border-white/[0.08] pt-6">
@@ -81,12 +81,12 @@ export function ScanShare({ reportId }: { reportId: string }) {
                 {status.state === "sending" ? "Sending…" : "Email PDF"}
               </Button>
             </div>
-            <label className="flex cursor-pointer items-start gap-3 text-xs text-fog">
+            <label className="flex cursor-pointer items-start gap-3 py-1 text-sm text-fog sm:py-0 sm:text-xs">
               <input
                 type="checkbox"
                 checked={marketing}
                 onChange={(e) => setMarketing(e.target.checked)}
-                className="mt-0.5 size-4 shrink-0 accent-white"
+                className="mt-0.5 size-5 shrink-0 accent-white sm:size-4"
               />
               <span>{MARKETING_CONSENT.text}. Optional; you can unsubscribe anytime.</span>
             </label>
@@ -95,7 +95,7 @@ export function ScanShare({ reportId }: { reportId: string }) {
                 {status.message}
               </p>
             ) : (
-              <p id="scan-report-hint" className="text-2xs leading-relaxed text-mist">
+              <p id="scan-report-hint" className="text-xs leading-relaxed text-mist sm:text-2xs">
                 We use your email to send this report. We only send product updates if you tick the box. See our{" "}
                 <a href="/privacy" className="underline underline-offset-4 hover:text-paper">privacy notice</a>.
               </p>

@@ -38,14 +38,14 @@ export default async function PublicNoticePage(props: Props) {
   return (
     <>
       {available.length > 1 && (
-        <nav aria-label="Language" className="mb-12 inline-flex max-w-full flex-wrap gap-1 rounded-[20px] border border-white/10 bg-white/[0.04] p-1">
+        <nav aria-label="Language" className="mb-8 inline-flex max-w-full flex-wrap sm:mb-12 gap-1 rounded-[20px] border border-white/10 bg-white/[0.04] p-1">
           {available.map((l) => (
             <Link
               key={l}
               href={`/p/${siteKey}/notice?lang=${l}${versionQuery}`}
               aria-current={language === l ? "page" : undefined}
               lang={l}
-              className={cn("rounded-full px-4 py-1.5 text-xs font-medium transition-colors", language === l ? "bg-paper text-ink" : "text-fog hover:text-paper")}
+              className={cn("rounded-full px-4 py-2.5 text-xs font-medium transition-colors sm:py-1.5", language === l ? "bg-paper text-ink" : "text-fog hover:text-paper")}
             >
               {nativeName(l)}
             </Link>

@@ -33,10 +33,10 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <article className="mx-auto max-w-2xl px-6 pb-24 pt-36">
+    <article className="mx-auto max-w-2xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-36">
       <h1 className="text-2xl font-semibold">Privacy notice</h1>
       <p className="mt-3 text-sm text-mist">How HighPre handles personal data.</p>
-      <div className="mt-12 space-y-10">
+      <div className="mt-10 space-y-8 sm:mt-12 sm:space-y-10">
         {sections.map((s) => (
           <section key={s.heading}>
             <h2 className="text-base font-medium">{s.heading}</h2>

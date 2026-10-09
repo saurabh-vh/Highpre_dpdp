@@ -35,16 +35,16 @@ export default async function SharedScanReportPage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-dvh px-6 pb-24 pt-36">
-      <div className="mx-auto mb-8 max-w-5xl">
+    <div className="min-h-dvh px-4 pb-16 pt-24 sm:px-6 sm:pb-24 sm:pt-36">
+      <div className="mx-auto mb-6 max-w-5xl sm:mb-8">
         <p className="text-2xs font-medium uppercase tracking-[0.14em] text-mist">Shared scan report</p>
-        <h1 className="mt-2 text-xl font-semibold text-balance sm:text-2xl">{hostnameOf(report.url)}</h1>
+        <h1 className="mt-2 text-xl font-semibold text-balance [overflow-wrap:anywhere] sm:text-2xl">{hostnameOf(report.url)}</h1>
         <p className="mt-2 text-xs text-mist">
           Scanned {formatDate(report.createdAt)} · link works until {formatDate(reportExpiresAt(report.createdAt))}
         </p>
       </div>
       <ScanReport url={report.url} initial={data} />
-      <div className="mx-auto mt-16 flex max-w-xl flex-col items-center text-center">
+      <div className="mx-auto mt-12 flex max-w-xl sm:mt-16 flex-col items-center text-center">
         <h2 className="text-base font-medium">Scan your own website</h2>
         <p className="mt-2 text-sm text-mist">Free, in under a minute.</p>
         <ScanForm size="md" className="mt-6 flex justify-center" />

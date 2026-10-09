@@ -15,6 +15,7 @@ import { contrast, isHex } from "@/lib/color";
 import { GOOGLE_CONSENT_LABELS, GOOGLE_CONSENT_TYPES, resolveConsentTypes } from "@/lib/consent-mode";
 import { nativeName } from "@/lib/i18n/languages";
 import { cn } from "@/lib/utils";
+import { AdsConsentIllustration, BrandColorsIllustration } from "@/components/illustrations/feature-illustrations";
 import { saveBannerAction } from "./actions";
 
 type Banner = {
@@ -149,26 +150,23 @@ export function BannerSettings({
 
             <fieldset className="space-y-4 rounded-field border border-line p-4">
               <legend className="sr-only">Colours and font</legend>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm">Colours and font</p>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={applyBrand}
-                    disabled={!hasBrand}
-                    title={hasBrand ? undefined : "Scan your website first: we pick up its colours and font during the scan."}
-                  >
-                    Use my website&apos;s colours
-                  </Button>
-                  {custom && (
-                    <Button size="sm" variant="ghost" onClick={() => setCustom(false)}>
-                      Use theme colours
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-3">
+                  <p className="text-sm">Colours and font</p>
+                  <p className="text-2xs text-mist">{hasBrand ? "Make the banner match your website in one click." : "Scan your website first, then match its colours in one click."}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={applyBrand} disabled={!hasBrand}>
+                      Use my website&apos;s colours
                     </Button>
-                  )}
+                    {custom && (
+                      <Button size="sm" variant="ghost" onClick={() => setCustom(false)}>
+                        Use theme colours
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                <BrandColorsIllustration color={brand?.primary || undefined} className="sm:w-56" />
               </div>
-              {!hasBrand && <p className="text-2xs text-mist">Run a scan and we&apos;ll find your website&apos;s brand colour, background, text colour and font.</p>}
               {custom ? (
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Field label="Button colour" name="primaryColor" errors={e.primaryColor}>
@@ -185,7 +183,7 @@ export function BannerSettings({
                     name="fontFamily"
                     errors={e.fontFamily}
                     className="sm:col-span-3"
-                    hint="Your website's own font names, e.g. Inter, sans-serif. Leave empty for the visitor's system font. We never load web fonts."
+                    hint="For example: Inter, sans-serif. Leave empty to use the visitor's own font."
                   >
                     <Input value={colors.fontFamily} maxLength={200} placeholder="System font" onChange={(ev) => set("fontFamily")(ev.target.value)} />
                   </Field>
@@ -194,7 +192,7 @@ export function BannerSettings({
                       Text and background are hard to tell apart (under 4.5:1). Choose a darker or lighter text colour.
                     </p>
                   )}
-                  <p className="text-2xs text-mist sm:col-span-3">Button text is set to black or white automatically, whichever is easier to read.</p>
+                  
                 </div>
               ) : (
                 <>
@@ -208,8 +206,8 @@ export function BannerSettings({
 
             <Switch
               name="showReopenButton"
-              label="Show a privacy settings button after a choice"
-              description="Lets visitors change or withdraw consent as easily as they gave it. Recommended."
+              label="Show a small privacy button after a choice"
+              description="So visitors can change their mind later. Recommended."
               defaultChecked={banner.showReopenButton}
             />
 
@@ -223,76 +221,86 @@ export function BannerSettings({
               }}
             >
               <legend className="sr-only">Google and Meta consent signals</legend>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm">Google and Meta ads</p>
+                  <p className="text-2xs text-mist">Only if you use Google or Facebook ads or analytics on your website.</p>
+                </div>
+                <AdsConsentIllustration className="sm:w-56" />
+              </div>
               <Switch
                 name="googleConsentMode"
-                label="Google Consent Mode v2"
-                description="Needed if you run Google Ads or GA4 for visitors in India or the EU. Google tags stay in a cookieless, “denied” mode until the visitor agrees, and Google is told exactly what they chose."
+                label="Google Ads and Analytics"
+                description="Turn on if you use Google Ads or Google Analytics. Google waits until the visitor agrees."
                 defaultChecked={signals.google}
               />
               <Switch
                 name="metaPixelConsent"
-                label="Meta Pixel consent"
-                description="Keeps the Facebook/Instagram Pixel from sending visitor data until they agree to the purpose mapped to Google ad storage (usually Marketing)."
+                label="Facebook and Instagram Pixel"
+                description="Turn on if you use the Meta Pixel. It waits until the visitor agrees to marketing."
                 defaultChecked={signals.meta}
               />
-              <div className={cn("space-y-4 border-t border-line pt-4", !signals.google && "hidden")}>
-                <Switch
-                  name="adsDataRedaction"
-                  label="Redact ad click identifiers until consent"
-                  description="When ad storage is denied, Google tags drop ad click IDs from requests. Recommended."
-                  defaultChecked={banner.adsDataRedaction !== false}
-                />
-                <Switch
-                  name="urlPassthrough"
-                  label="Pass ad click information through page URLs"
-                  description="Keeps measuring which ads brought visitors without cookies, by adding parameters to links. Leave off unless your ads team asks for it."
-                  defaultChecked={Boolean(banner.urlPassthrough)}
-                />
-              </div>
-              {/* Kept in the form while hidden, so saving with signals off doesn't erase the mapping. */}
-              <div className={cn("space-y-2 border-t border-line pt-4", !signals.google && !signals.meta && "hidden")}>
-                <p className="text-sm">Which purpose allows what</p>
-                <p className="text-2xs text-mist">
-                  A Google consent type is granted only when the visitor agrees to every purpose ticked for it. Security storage is always granted. Meta follows Ad storage.
-                </p>
-                <div className="overflow-x-auto rounded-field border border-line">
-                  <table className="w-full min-w-[560px] text-left text-2xs">
-                    <thead className="text-mist">
-                      <tr>
-                        <th scope="col" className="px-3 py-2 font-medium">Purpose</th>
-                        {GOOGLE_CONSENT_TYPES.map((type) => (
-                          <th key={type} scope="col" className="px-2 py-2 text-center font-medium" title={GOOGLE_CONSENT_LABELS[type].hint}>
-                            {GOOGLE_CONSENT_LABELS[type].label}
-                            <span className="block font-mono text-[10px] font-normal opacity-70">{type}</span>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {purposes.map((p) => (
-                        <tr key={p.key}>
-                          <th scope="row" className="px-3 py-2 font-normal text-fog">
-                            {p.name}
-                            <span className="block font-mono text-[10px] text-mist">{p.key}</span>
-                          </th>
-                          {GOOGLE_CONSENT_TYPES.map((type) => (
-                            <td key={type} className="px-2 py-2 text-center">
-                              <input
-                                type="checkbox"
-                                name={`gcm:${p.key}`}
-                                value={type}
-                                defaultChecked={mapping[p.key]?.includes(type)}
-                                aria-label={`${p.name}: ${GOOGLE_CONSENT_LABELS[type].label}`}
-                                className="size-4 cursor-pointer accent-white"
-                              />
-                            </td>
+              <details className={cn("border-t border-line pt-4", !signals.google && !signals.meta && "hidden")}>
+                <summary className="cursor-pointer text-xs text-fog">Advanced settings</summary>
+                <div className="mt-4 space-y-4">
+                  <div className={cn("space-y-4", !signals.google && "hidden")}>
+                    <Switch
+                      name="adsDataRedaction"
+                      label="Hide ad click details until consent"
+                      description="Recommended."
+                      defaultChecked={banner.adsDataRedaction !== false}
+                    />
+                    <Switch
+                      name="urlPassthrough"
+                      label="Track ad clicks through page links"
+                      description="Leave off unless your ads team asks for it."
+                      defaultChecked={Boolean(banner.urlPassthrough)}
+                    />
+                  </div>
+                  {/* Kept in the form while hidden, so saving with signals off doesn't erase the mapping. */}
+                  <div className="space-y-2">
+                    <p className="text-sm">Which choice allows what</p>
+                    <p className="text-2xs text-mist">Already set up for you. Change only if you know you need to.</p>
+                    <div className="overflow-x-auto rounded-field border border-line">
+                      <table className="w-full min-w-[560px] text-left text-2xs">
+                        <thead className="text-mist">
+                          <tr>
+                            <th scope="col" className="px-3 py-2 font-medium">Purpose</th>
+                            {GOOGLE_CONSENT_TYPES.map((type) => (
+                              <th key={type} scope="col" className="px-2 py-2 text-center font-medium" title={GOOGLE_CONSENT_LABELS[type].hint}>
+                                {GOOGLE_CONSENT_LABELS[type].label}
+                                <span className="block font-mono text-[10px] font-normal opacity-70">{type}</span>
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {purposes.map((p) => (
+                            <tr key={p.key}>
+                              <th scope="row" className="px-3 py-2 font-normal text-fog">
+                                {p.name}
+                                <span className="block font-mono text-[10px] text-mist">{p.key}</span>
+                              </th>
+                              {GOOGLE_CONSENT_TYPES.map((type) => (
+                                <td key={type} className="px-2 py-2 text-center">
+                                  <input
+                                    type="checkbox"
+                                    name={`gcm:${p.key}`}
+                                    value={type}
+                                    defaultChecked={mapping[p.key]?.includes(type)}
+                                    aria-label={`${p.name}: ${GOOGLE_CONSENT_LABELS[type].label}`}
+                                    className="size-4 cursor-pointer accent-white"
+                                  />
+                                </td>
+                              ))}
+                            </tr>
                           ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </details>
             </fieldset>
 
             <div className="flex items-center justify-end gap-3 border-t border-line pt-5">

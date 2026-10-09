@@ -25,7 +25,7 @@ export function ScanForm({ size = "lg", className, autoFocus }: { size?: "md" | 
     <form onSubmit={onSubmit} className={cn("w-full", className)} noValidate>
       <div
         className={cn(
-          "glass-strong flex items-center gap-2 rounded-full p-1.5 transition-shadow duration-500 ease-apple focus-within:ring-4 focus-within:ring-white/10",
+          "glass-strong flex w-full items-center gap-2 rounded-full p-1.5 transition-shadow duration-500 ease-apple focus-within:ring-4 focus-within:ring-white/10",
           lg ? "max-w-xl" : "max-w-md",
         )}
       >
@@ -47,13 +47,13 @@ export function ScanForm({ size = "lg", className, autoFocus }: { size?: "md" | 
           }}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? "scan-url-error" : undefined}
-          className={cn("min-w-0 flex-1 bg-transparent pl-5 text-paper placeholder:text-mist focus:outline-none", lg ? "h-12 text-base" : "h-10 text-sm")}
+          className={cn("min-w-0 flex-1 bg-transparent text-paper placeholder:text-mist focus:outline-none", lg ? "h-12 pl-4 text-base sm:pl-5" : "h-11 pl-4 text-sm sm:h-10")}
         />
         <button
           type="submit"
           className={cn(
             "shrink-0 rounded-full bg-paper font-medium text-ink transition-[transform,background-color] duration-300 ease-apple hover:bg-fog active:scale-[0.97]",
-            lg ? "h-12 px-6 text-sm" : "h-10 px-5 text-xs",
+            lg ? "h-12 px-5 text-sm sm:px-6" : "h-11 px-5 text-xs sm:h-10",
           )}
         >
           Scan free

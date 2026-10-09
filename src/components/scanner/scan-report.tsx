@@ -63,11 +63,11 @@ export function ScanReport({ url, initial }: { url: string; initial?: Report }) 
 
   if (state.status === "loading") {
     return (
-      <div className="relative mx-auto max-w-3xl overflow-hidden rounded-sheet border hairline" aria-busy="true">
-        <CubeField className="relative h-72" cols={22} rows={22} size={40} cycleSeconds={4} />
+      <div className="relative mx-auto max-w-3xl overflow-hidden rounded-panel border hairline sm:rounded-sheet" aria-busy="true">
+        <CubeField className="relative h-60 sm:h-72" cols={22} rows={22} size={40} cycleSeconds={4} />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-8">
-          <p className="text-lg font-medium">Scanning {url}</p>
+        <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
+          <p className="text-lg font-medium [overflow-wrap:anywhere]">Scanning {url}</p>
           <p className="mt-1 text-sm text-mist" role="status" aria-live="polite">
             {PROGRESS[step]}…
           </p>
@@ -79,7 +79,7 @@ export function ScanReport({ url, initial }: { url: string; initial?: Report }) 
   if (state.status === "error") {
     return (
       <div className="mx-auto max-w-xl text-center">
-        <p className="text-lg font-medium">We couldn&apos;t scan {url}</p>
+        <p className="text-lg font-medium [overflow-wrap:anywhere]">We couldn&apos;t scan {url}</p>
         <p className="mt-2 text-sm text-mist">{state.message}</p>
         <div className="mt-8 flex justify-center">
           <ScanForm size="md" />
@@ -92,10 +92,10 @@ export function ScanReport({ url, initial }: { url: string; initial?: Report }) 
   const critical = report.findings.filter((f) => f.severity === "critical").length;
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[320px_1fr]">
-      <aside className="glass flex flex-col items-center rounded-panel p-8 text-center lg:sticky lg:top-28 lg:self-start">
+    <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <aside className="glass flex min-w-0 flex-col items-center rounded-panel p-6 text-center sm:p-8 lg:sticky lg:top-28 lg:self-start">
         <ProgressRing value={report.score} size={148} label="readiness" />
-        <p className="mt-6 text-sm font-medium">{new URL(report.url).hostname}</p>
+        <p className="mt-6 max-w-full text-sm font-medium [overflow-wrap:anywhere]">{new URL(report.url).hostname}</p>
         <p className="mt-1 text-xs text-mist">
           {report.pagesScanned.length} page{report.pagesScanned.length === 1 ? "" : "s"} scanned
         </p>
@@ -110,38 +110,38 @@ export function ScanReport({ url, initial }: { url: string; initial?: Report }) 
         <p className="mt-3 text-2xs text-mist">Free during early access</p>
       </aside>
 
-      <div className="space-y-6">
-        <section className="glass rounded-panel p-6 sm:p-8">
+      <div className="min-w-0 space-y-4 sm:space-y-6">
+        <section className="glass rounded-panel p-5 sm:p-8">
           <h2 className="mb-6 text-sm font-semibold">Findings</h2>
           <ScanFindings findings={report.findings} />
         </section>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <section className="glass rounded-panel p-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+          <section className="glass min-w-0 rounded-panel p-5 sm:p-6">
             <h2 className="text-sm font-semibold">Trackers</h2>
             {report.trackers.length === 0 ? (
-              <p className="mt-3 text-xs text-mist">None detected in the page source.</p>
+              <p className="mt-3 text-sm text-mist sm:text-xs">None detected in the page source.</p>
             ) : (
               <ul className="mt-4 space-y-2.5">
                 {report.trackers.map((t) => (
-                  <li key={t.id} className="flex items-center justify-between text-xs">
-                    <span>{t.name}</span>
-                    <span className="text-mist">{t.category.replace("_", " ")}</span>
+                  <li key={t.id} className="flex items-baseline justify-between gap-4 text-sm sm:text-xs">
+                    <span className="min-w-0">{t.name}</span>
+                    <span className="shrink-0 text-right text-mist">{t.category.replace("_", " ")}</span>
                   </li>
                 ))}
               </ul>
             )}
           </section>
-          <section className="glass rounded-panel p-6">
+          <section className="glass min-w-0 rounded-panel p-5 sm:p-6">
             <h2 className="text-sm font-semibold">Forms collecting personal data</h2>
             {report.forms.length === 0 ? (
-              <p className="mt-3 text-xs text-mist">None found on the pages we checked.</p>
+              <p className="mt-3 text-sm text-mist sm:text-xs">None found on the pages we checked.</p>
             ) : (
               <ul className="mt-4 space-y-3">
                 {report.forms.slice(0, 6).map((f, i) => (
-                  <li key={`${f.page}-${i}`} className="text-xs">
+                  <li key={`${f.page}-${i}`} className="text-sm sm:text-xs">
                     <span className="block truncate text-mist">{new URL(f.page).pathname}</span>
-                    <span className="mt-0.5 block">{f.fields.join(", ")}</span>
+                    <span className="mt-0.5 block [overflow-wrap:anywhere]">{f.fields.join(", ")}</span>
                   </li>
                 ))}
               </ul>
@@ -149,7 +149,7 @@ export function ScanReport({ url, initial }: { url: string; initial?: Report }) 
           </section>
         </div>
         {report.reportId && <ScanShare reportId={report.reportId} />}
-        <p className="px-2 text-2xs leading-relaxed text-mist">
+        <p className="px-2 text-xs leading-relaxed text-mist sm:text-2xs">
           This scan reads your pages&apos; HTML. Content added later by JavaScript may not appear. It&apos;s a starting point, not a legal audit.
         </p>
       </div>

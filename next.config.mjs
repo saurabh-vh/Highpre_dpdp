@@ -26,6 +26,8 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // NEXT_DIST_DIR lets a second dev server run beside the main one without sharing .next.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,

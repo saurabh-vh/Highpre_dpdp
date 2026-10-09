@@ -102,6 +102,14 @@ const siteSchema = new Schema(
       enabled: { type: Boolean, default: true },
       /** List active vendors from the register (name, category, country). */
       showVendors: { type: Boolean, default: false },
+      /** Badge linking to the privacy centre, drawn on the website by the HighPre script. */
+      badge: {
+        enabled: { type: Boolean, default: false },
+        /** footer: at the end of the page (or inside an element with data-hp-badge); corner: fixed in a corner. */
+        placement: { type: String, enum: ["footer", "corner"], default: "footer" },
+        theme: { type: String, enum: ["light", "dark"], default: "light" },
+        size: { type: String, enum: ["regular", "small"], default: "regular" },
+      },
     },
     publishedNoticeVersion: { type: Number, default: 0 },
     lastScanId: { type: Schema.Types.ObjectId, ref: "Scan" },

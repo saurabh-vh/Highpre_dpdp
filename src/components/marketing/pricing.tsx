@@ -6,23 +6,23 @@ import { cn } from "@/lib/utils";
 /** Plan comparison on the landing page, from the same data the billing page uses. */
 export function Pricing() {
   return (
-    <section id="pricing" className="mx-auto max-w-6xl scroll-mt-28 px-6 py-28 sm:py-36">
+    <section id="pricing" className="mx-auto max-w-6xl scroll-mt-24 px-4 py-20 sm:scroll-mt-28 sm:px-6 sm:py-36">
       <div className="max-w-2xl">
-        <h2 className="text-2xl font-semibold text-balance sm:text-3xl">Simple pricing.</h2>
+        <h2 className="text-[2rem] font-semibold leading-[1.1] tracking-[-0.03em] text-balance sm:text-3xl">Simple pricing.</h2>
         <p className="mt-4 text-sm text-mist sm:text-base">Start free. Upgrade when you add websites or teammates. Prices per month, plus 18% GST. Cancel anytime.</p>
       </div>
-      <div className="mt-14 grid gap-5 md:grid-cols-3">
+      <div className="mt-10 grid max-w-xl grid-cols-1 gap-4 sm:mt-14 sm:gap-5 lg:max-w-none lg:grid-cols-3">
         {PLANS.map((plan) => {
           const featured = plan.id === "starter";
           return (
-            <div key={plan.id} className={cn("glass flex flex-col rounded-sheet p-7", featured && "glass-strong border-white/30")}>
-              <div className="flex items-center justify-between">
+            <div key={plan.id} className={cn("glass flex min-w-0 flex-col rounded-sheet p-6 sm:p-7", featured && "glass-strong border-white/30")}>
+              <div className="flex items-center justify-between gap-3">
                 <h3 className="text-base font-semibold">{plan.name}</h3>
                 {featured && <span className="rounded-full bg-paper px-2.5 py-0.5 text-2xs font-medium text-ink">Most popular</span>}
               </div>
               <p className="mt-4">
                 <span className="text-3xl font-semibold tracking-tight">{formatPrice(plan.price)}</span>
-                <span className="text-sm text-mist"> / month</span>
+                <span className="whitespace-nowrap text-sm text-mist"> / month</span>
               </p>
               <p className="mt-2 text-sm text-mist">{plan.tagline}</p>
               <ul className="mb-8 mt-6 flex-1 space-y-3">

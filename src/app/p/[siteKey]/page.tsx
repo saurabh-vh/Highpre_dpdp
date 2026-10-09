@@ -68,14 +68,14 @@ export default async function PrivacyCentrePage(props: Props) {
   return (
     <div className="text-pretty">
       {view.notice.languages.length > 1 && (
-        <nav aria-label="Language" className="mb-12 inline-flex max-w-full flex-wrap gap-1 rounded-[20px] border border-white/10 bg-white/[0.04] p-1">
+        <nav aria-label="Language" className="mb-8 inline-flex max-w-full flex-wrap sm:mb-12 gap-1 rounded-[20px] border border-white/10 bg-white/[0.04] p-1">
           {view.notice.languages.map((l) => (
             <Link
               key={l}
               href={`/p/${siteKey}?lang=${l}`}
               aria-current={language === l ? "page" : undefined}
               lang={l}
-              className={cn("rounded-full px-4 py-1.5 text-xs font-medium transition-colors", language === l ? "bg-paper text-ink" : "text-fog hover:text-paper")}
+              className={cn("rounded-full px-4 py-2.5 text-xs font-medium transition-colors sm:py-1.5", language === l ? "bg-paper text-ink" : "text-fog hover:text-paper")}
             >
               {nativeName(l)}
             </Link>
@@ -89,7 +89,7 @@ export default async function PrivacyCentrePage(props: Props) {
         <a
           href={view.siteUrl}
           rel="noopener"
-          className="mt-2 inline-flex items-center gap-1 text-sm text-fog underline decoration-white/30 underline-offset-4 hover:decoration-white"
+          className="mt-1 inline-flex min-h-11 max-w-full items-center gap-1 break-all text-sm text-fog underline decoration-white/30 underline-offset-4 hover:decoration-white"
         >
           {view.siteHost}
           <ArrowUpRight className="size-3.5" aria-hidden />
@@ -114,7 +114,7 @@ export default async function PrivacyCentrePage(props: Props) {
         ))}
       </ul>
 
-      <div className="mt-14 space-y-12">
+      <div className="mt-12 space-y-10 sm:mt-14 sm:space-y-12">
         <Section title="What your data is used for">
           <p className="text-xs text-mist">
             From the privacy notice
@@ -136,7 +136,7 @@ export default async function PrivacyCentrePage(props: Props) {
           ) : (
             <p className="mt-4 text-sm text-fog/90" lang={language}>{view.notice.intro}</p>
           )}
-          <Link href={`/p/${siteKey}/notice${q}`} className="mt-6 inline-block text-sm underline decoration-white/30 underline-offset-4 hover:decoration-white">
+          <Link href={`/p/${siteKey}/notice${q}`} className="mt-4 inline-block py-2 text-sm underline decoration-white/30 underline-offset-4 hover:decoration-white">
             Read the full privacy notice
           </Link>
         </Section>
@@ -218,7 +218,7 @@ export default async function PrivacyCentrePage(props: Props) {
           <a
             href={view.siteUrl}
             rel="noopener"
-            className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full border border-white/20 px-5 text-xs font-medium transition-colors hover:border-white/50 hover:bg-white/5"
+            className="mt-5 inline-flex h-11 max-w-full items-center gap-1.5 rounded-full border border-white/20 px-5 text-xs font-medium transition-colors hover:border-white/50 hover:bg-white/5"
           >
             Go to {view.siteHost}
             <ArrowUpRight className="size-3.5" aria-hidden />

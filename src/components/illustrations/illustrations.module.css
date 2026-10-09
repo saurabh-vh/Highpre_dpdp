@@ -1,0 +1,166 @@
+/*
+ * Small looping illustrations for dashboard features. Each element's resting
+ * style is the "after" state, so with reduced motion the picture still tells
+ * the story; animations only play the "before → after" change.
+ */
+
+.svg * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Install: the banner slides up into the website. */
+.bannerUp {
+  animation: banner-up 5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes banner-up {
+  0%, 25% { transform: translateY(30px); opacity: 0; }
+  40%, 88% { transform: none; opacity: 1; }
+  100% { transform: none; opacity: 0; }
+}
+.flow {
+  stroke-dasharray: 4 4;
+  animation: flow 1.2s linear infinite;
+}
+@keyframes flow {
+  to { stroke-dashoffset: -16; }
+}
+
+/* Brand colours: a drop of colour travels from the website to the banner button. */
+.drop {
+  animation: drop 5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes drop {
+  0%, 15% { transform: translate(0, 0) scale(0); opacity: 0; }
+  20% { transform: translate(0, 0) scale(1); opacity: 1; }
+  45% { transform: translate(165px, 14px) scale(1); opacity: 1; }
+  52%, 100% { transform: translate(165px, 14px) scale(0); opacity: 0; }
+}
+.fillIn {
+  animation: fill-in 5s ease infinite;
+}
+@keyframes fill-in {
+  0%, 46% { opacity: 0; }
+  56%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Badge: pops into place. */
+.pop {
+  animation: pop 4.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes pop {
+  0%, 20% { transform: scale(0.6); opacity: 0; }
+  32%, 90% { transform: none; opacity: 1; }
+  100% { transform: none; opacity: 0; }
+}
+
+/* Forms: the box gets ticked, the form is sent, the choice is saved. */
+.tick {
+  stroke-dasharray: 14;
+  animation: tick 5s ease infinite;
+}
+@keyframes tick {
+  0%, 20% { stroke-dashoffset: 14; }
+  30%, 100% { stroke-dashoffset: 0; }
+}
+.press {
+  animation: press 5s ease infinite;
+}
+@keyframes press {
+  0%, 42% { transform: none; }
+  46% { transform: scale(0.92); }
+  50%, 100% { transform: none; }
+}
+.saved {
+  animation: saved 5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes saved {
+  0%, 52% { transform: translateY(6px); opacity: 0; }
+  62%, 92% { transform: none; opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Google / Meta: the ad tag waits, the visitor agrees, the tag goes. */
+.waiting {
+  animation: waiting 5s ease infinite;
+}
+@keyframes waiting {
+  0%, 48% { opacity: 1; }
+  54%, 100% { opacity: 0; }
+}
+.going {
+  animation: going 5s ease infinite;
+}
+@keyframes going {
+  0%, 50% { opacity: 0; }
+  58%, 94% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.cursor {
+  animation: cursor 5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes cursor {
+  0%, 10% { transform: translate(18px, 22px); opacity: 0; }
+  20% { opacity: 1; }
+  40% { transform: none; }
+  45% { transform: scale(0.85); }
+  50%, 80% { transform: none; opacity: 1; }
+  90%, 100% { opacity: 0; }
+}
+
+/* Monitoring: the week passes, a check runs, an alert arrives. */
+.day {
+  animation: day 6s ease infinite;
+  animation-delay: calc(var(--i) * 0.45s);
+}
+@keyframes day {
+  0% { opacity: 0.25; }
+  8%, 100% { opacity: 1; }
+}
+.sweep {
+  animation: sweep 6s linear infinite;
+}
+@keyframes sweep {
+  0%, 55% { transform: translateX(-40px); opacity: 0; }
+  60% { opacity: 1; }
+  75% { transform: translateX(40px); opacity: 1; }
+  80%, 100% { opacity: 0; }
+}
+.bell {
+  animation: bell 6s ease infinite;
+  transform-origin: top center;
+}
+@keyframes bell {
+  0%, 76% { transform: scale(0.6); opacity: 0; }
+  80% { transform: rotate(14deg); opacity: 1; }
+  84% { transform: rotate(-12deg); }
+  88%, 100% { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg * {
+    animation: none !important;
+  }
+  .drop,
+  .waiting,
+  .sweep {
+    opacity: 0;
+  }
+}
+
+/* Desktop agent: only a small label travels from the computer to the owner. */
+.travel {
+  animation: travel 5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes travel {
+  0%, 35% { transform: translateX(0); opacity: 0; }
+  40% { opacity: 1; }
+  62% { transform: translateX(76px); opacity: 1; }
+  68%, 100% { transform: translateX(76px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .travel {
+    opacity: 1;
+  }
+}

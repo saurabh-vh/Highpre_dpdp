@@ -32,10 +32,10 @@ export function useDetectedOs(): Detected {
 }
 
 const DOWNLOADS = [
-  { platform: "windows", label: "Windows", hint: "Windows 10 or 11 · .exe", icon: Monitor, os: "windows" },
-  { platform: "mac-arm64", label: "macOS · Apple silicon", hint: "M1, M2, M3, M4 · .zip", icon: Apple, os: "mac" },
-  { platform: "mac-intel", label: "macOS · Intel", hint: "Older Macs · .zip", icon: Apple, os: "mac" },
-  { platform: "browser", label: "Chrome or Edge", hint: "Browser extension · .zip", icon: AppWindow, os: "browser" },
+  { platform: "windows", label: "Windows", hint: "Windows 10 or 11", icon: Monitor, os: "windows" },
+  { platform: "mac-arm64", label: "Mac (M1 or newer)", hint: "M1, M2, M3, M4", icon: Apple, os: "mac" },
+  { platform: "mac-intel", label: "Mac (Intel)", hint: "Older Macs", icon: Apple, os: "mac" },
+  { platform: "browser", label: "Chrome or Edge", hint: "Browser extension", icon: AppWindow, os: "browser" },
 ] as const;
 
 /** Big download buttons for the agent page. The detected OS comes first and is highlighted. */
@@ -158,7 +158,7 @@ export function AgentPolicyForm({
   return (
     <form {...formProps} className="space-y-6">
       <fieldset>
-        <legend className="mb-2.5 text-xs font-medium text-fog">Watch for</legend>
+        <legend className="mb-2.5 text-xs font-medium text-fog">Look for</legend>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {dataTypes.map((d) => (
             <label key={d.value} className="flex cursor-pointer items-start gap-3 rounded-field border border-line px-3.5 py-2.5 hover:border-white/25">
@@ -173,16 +173,16 @@ export function AgentPolicyForm({
       </fieldset>
 
       <div>
-        <ChoiceChips name="allowedApps" legend="Approved tools: no warnings here" options={apps} defaultValue={value.allowedApps} />
-        <p className="mt-2 text-2xs text-mist">Approve a tool only if your company has a business agreement for it, such as ChatGPT Enterprise or Microsoft 365 Copilot.</p>
+        <ChoiceChips name="allowedApps" legend="Allowed tools (no warnings)" options={apps} defaultValue={value.allowedApps} />
+        <p className="mt-2 text-2xs text-mist">Only tools your company pays for, like ChatGPT Enterprise.</p>
       </div>
 
       <fieldset>
-        <legend className="mb-2.5 text-xs font-medium text-fog">When the browser extension finds something</legend>
+        <legend className="mb-2.5 text-xs font-medium text-fog">When the browser extension spots something</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {[
-            { v: "warn", label: "Warn, then let them decide", hint: "They can continue or say it isn't sensitive. You see what they chose." },
-            { v: "block", label: "Block it", hint: "Stops the paste or message. They can report a false alarm." },
+            { v: "warn", label: "Warn and let them choose", hint: "You see what they chose." },
+            { v: "block", label: "Block it", hint: "They can't paste or send it." },
           ].map((o) => (
             <label key={o.v} className="flex cursor-pointer items-start gap-3 rounded-field border border-line px-3.5 py-2.5 hover:border-white/25">
               <input type="radio" name="extensionMode" value={o.v} defaultChecked={value.extensionMode === o.v} className="mt-0.5 size-4 shrink-0 accent-white" />
@@ -193,7 +193,7 @@ export function AgentPolicyForm({
             </label>
           ))}
         </div>
-        <p className="mt-2 text-2xs text-mist">The desktop agent always warns: it sees the clipboard, not the paste itself.</p>
+        
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -206,8 +206,8 @@ export function AgentPolicyForm({
 
 /** Company installers for Intune, Jamf and similar, plus the switch and key rotation. */
 export function CompanyInstall({ enabled }: { enabled: boolean }) {
-  const toggle = useAction(() => setEnrollmentAction(!enabled), enabled ? "Turn off company installs? New computers won't be able to join; ones already set up keep working." : undefined);
-  const rotate = useAction(rotateEnrollKeyAction, "Replace the company installer key? Installers you've already deployed stop adding new computers until you redeploy the new one.");
+  const toggle = useAction(() => setEnrollmentAction(!enabled), enabled ? "Turn off the company installer? Computers already set up keep working." : undefined);
+  const rotate = useAction(rotateEnrollKeyAction, "Replace the key? The old installer stops working, so download and send the new one.");
   const state = rotate.state.message ? rotate.state : toggle.state;
   return (
     <div className="space-y-4">
@@ -221,7 +221,7 @@ export function CompanyInstall({ enabled }: { enabled: boolean }) {
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-mist">Company installs are {enabled ? "on" : "off"}.</span>
+        <span className="text-xs text-mist">Company installer is {enabled ? "on" : "off"}.</span>
         <Button variant="secondary" size="sm" onClick={toggle.run} disabled={toggle.pending}>
           {toggle.pending && <Spinner />}
           {enabled ? "Turn off" : "Turn on"}

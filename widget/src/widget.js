@@ -1,7 +1,12 @@
 /*!
  * HighPre consent widget
- * <script src="https://highpre.com/widget.js" data-hp-site="SITE_KEY" async></script>
+ * Install (one line, everything else is switched on in the dashboard):
+ *   <script src="https://highpre.com/s/SITE_KEY.js"></script>
+ * Older installs keep working:
+ *   <script src="https://highpre.com/widget.js" data-hp-site="SITE_KEY" async></script>
  *
+ * - Draws the privacy centre badge when it's switched on (inside [data-hp-badge]
+ *   if the site has such an element, else at the end of the page or in a corner).
  * - Shows a consent banner for the site's published notice and purposes.
  * - Speaks every language the site publishes, starting with the visitor's own.
  * - Activates <script type="text/plain" data-hp-purpose="key"> only after consent.
@@ -31,14 +36,17 @@ import { SYSTEM_FONT_STACK } from "../../src/lib/banner-layout";
 (function () {
   "use strict";
 
+  // Set by the per-site script /s/<siteKey>.js: the site key and its consent-signal settings.
+  var preset = window.__HP_BOOT || null;
   var script =
     document.currentScript ||
     document.querySelector("script[data-hp-site]") ||
+    (preset && preset.siteKey && document.querySelector('script[src*="/s/' + preset.siteKey + '.js"]')) ||
     document.querySelector('script[src*="widget.js"][data-site]');
   if (!script || window.HighPre) return;
 
-  var siteKey = script.getAttribute("data-hp-site") || script.getAttribute("data-site");
-  if (!siteKey) return console.warn("[HighPre] Missing data-hp-site attribute.");
+  var siteKey = script.getAttribute("data-hp-site") || script.getAttribute("data-site") || (preset && preset.siteKey);
+  if (!siteKey) return console.warn("[HighPre] Missing site key: copy the script line from your HighPre dashboard.");
 
   var API = new URL(script.src).origin;
   var STORE_KEY = "hp_consent_" + siteKey;
@@ -85,6 +93,8 @@ import { SYSTEM_FONT_STACK } from "../../src/lib/banner-layout";
   var CM_KEY = "hp_cm_" + siteKey;
   // { google, meta, adsDataRedaction, urlPassthrough, types: { purposeKey: [type] }, essential: [purposeKey] }
   var cm = loadKey(CM_KEY);
+  // The per-site script carries the current settings: they win over the cache, even on a first visit.
+  if (preset && "cm" in preset) cm = preset.cm;
   if (script.hasAttribute("data-hp-consent-mode")) cm = Object.assign({ adsDataRedaction: true, types: {} }, cm, { google: true });
   var gcmDefaulted = false;
   var fbWanted = null;
@@ -704,6 +714,51 @@ import { SYSTEM_FONT_STACK } from "../../src/lib/banner-layout";
     },
   };
 
+  // ── Privacy centre badge ───────────────────────────────────────────
+  /** The site's page footer: the last <footer> (or role=contentinfo) that isn't part of an article or card. */
+  function pageFooter() {
+    var all = document.querySelectorAll("footer, [role=contentinfo]");
+    for (var i = all.length - 1; i >= 0; i--) {
+      if (!all[i].closest("article, section, aside, [role=dialog]")) return all[i];
+    }
+    return null;
+  }
+
+  /**
+   * Draws the badge switched on in the dashboard, with no extra tags: inside an
+   * element with data-hp-badge if the site has one; otherwise inside the site's
+   * footer (or at the end of the page if there's none), or fixed in the corner
+   * opposite the settings button.
+   */
+  function renderBadge(b) {
+    if (!b || document.getElementById("hp-badge")) return;
+    var holder = document.createElement("div");
+    holder.id = "hp-badge";
+    var target = document.querySelector("[data-hp-badge]");
+    var footer = !target && b.placement !== "corner" ? pageFooter() : null;
+    if (target) {
+      holder.style.cssText = "display:inline-block;line-height:0";
+      target.appendChild(holder);
+    } else if (footer) {
+      holder.style.cssText = "display:flex;justify-content:center;padding:12px 0;line-height:0;clear:both";
+      footer.appendChild(holder);
+    } else if (b.placement === "corner") {
+      var side = config.banner.position === "bottom-left" ? "right" : "left";
+      holder.style.cssText = "position:fixed;bottom:16px;" + side + ":16px;z-index:2147483640;line-height:0";
+      document.body.appendChild(holder);
+    } else {
+      holder.style.cssText = "display:flex;justify-content:center;padding:16px;line-height:0;clear:both";
+      document.body.appendChild(holder);
+    }
+    var r = holder.attachShadow ? holder.attachShadow({ mode: "open" }) : holder;
+    var link = el("a", { href: b.url, target: "_blank", rel: "noopener", "aria-label": b.label });
+    link.style.cssText = "display:inline-block;line-height:0;border-radius:999px";
+    var img = el("img", { src: b.image, alt: b.label, width: String(b.width), height: String(b.height) });
+    img.style.cssText = "display:block;width:" + b.width + "px;height:" + b.height + "px;max-width:none;border:0";
+    link.appendChild(img);
+    r.appendChild(link);
+  }
+
   function boot() {
     fetch(API + "/api/public/config/" + encodeURIComponent(siteKey))
       .then(function (r) {
@@ -716,6 +771,7 @@ import { SYSTEM_FONT_STACK } from "../../src/lib/banner-layout";
         lang = pickLanguage();
         syncConsentMode();
         initForms({ config: config, siteKey: siteKey, api: API, lang: function () { return lang; }, principalId: principalId });
+        renderBadge(config.badge);
         var current = state && state.version === config.version;
 
         if (config.children && state && state.age === "child") {

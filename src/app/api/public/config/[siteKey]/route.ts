@@ -5,6 +5,7 @@ import { getLocale, nativeName, purposeText, type WidgetStrings } from "@/lib/i1
 import { en } from "@/lib/i18n/locales/en";
 import { isTracking } from "@/lib/constants";
 import { formsConfig } from "@/lib/consent/forms";
+import { badgeConfig } from "@/lib/consent/site-script";
 import { bannerLayout, safeFontFamily } from "@/lib/banner-layout";
 import { isHex } from "@/lib/color";
 import { resolveConsentTypes } from "@/lib/consent-mode";
@@ -20,7 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ siteKey:
 
   const { siteKey } = await params;
   await connectDb();
-  const site = await Site.findOne({ siteKey }).select("purposes banner publishedNoticeVersion widgetLastSeenAt children forms").lean();
+  const site = await Site.findOne({ siteKey }).select("siteKey purposes banner publishedNoticeVersion widgetLastSeenAt children forms privacyCentre").lean();
   if (!site) return json({ error: "Unknown site" }, { status: 404, cors: true });
 
   // Record that the widget is installed, at most once an hour.
@@ -78,6 +79,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ siteKey:
       children: Boolean(site.children?.enabled),
       // Consent checkboxes on the website's own forms (widget/src/forms.js).
       forms: formsConfig(site.purposes, site.forms),
+      // Privacy centre badge drawn by the widget, or null when switched off.
+      badge: badgeConfig(site, base),
       noticeUrl: `${base}/p/${siteKey}/notice`,
       rightsUrl: `${base}/p/${siteKey}/rights`,
       parentalUrl: `${base}/p/${siteKey}/parental`,

@@ -30,14 +30,14 @@ function FindingList({ findings }: { findings: FindingView[] }) {
       {findings.map((f) => {
         const Icon = icon[f.severity];
         return (
-          <li key={f.id} className="flex gap-4 py-5 first:pt-0 last:pb-0">
+          <li key={f.id} className="flex gap-3 py-5 first:pt-0 last:pb-0 sm:gap-4">
             <Icon
               className={cn("mt-0.5 size-5 shrink-0", f.severity === "pass" ? "text-success" : f.severity === "warning" ? "text-warning" : "text-danger")}
               strokeWidth={f.severity === "critical" ? 2.2 : 1.7}
               aria-hidden
             />
             <div className="min-w-0">
-              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium">
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium [overflow-wrap:anywhere]">
                 {f.title}
                 <span
                   className={cn(
@@ -48,7 +48,7 @@ function FindingList({ findings }: { findings: FindingView[] }) {
                   {label[f.severity]}
                 </span>
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-mist">{f.detail}</p>
+              <p className="mt-1 text-sm leading-relaxed text-mist [overflow-wrap:anywhere] sm:text-xs">{f.detail}</p>
             </div>
           </li>
         );

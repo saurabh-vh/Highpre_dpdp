@@ -4,6 +4,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { CopyButton } from "@/components/ui/copy-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormsIllustration } from "@/components/illustrations/feature-illustrations";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { FormSettings } from "@/features/forms/form-settings";
 import { requireAuth, requireSite } from "@/lib/auth/guards";
@@ -61,8 +62,8 @@ export default async function FormsPage({ params }: { params: Promise<{ siteId: 
     <div className="space-y-6">
       <Panel>
         <PanelHeader
-          title="Consent on your forms"
-          description="Contact, enquiry and sign-up forms collect personal data too. The banner script adds a consent checkbox for each purpose just above the submit button, in the visitor's language, and records every submission in your consent ledger."
+          title="Checkboxes on your forms"
+          description="Adds a consent tick box to your contact and sign-up forms, and saves each person's choice."
           action={live.auto ? <Badge tone="success">Automatic protection on</Badge> : <Badge tone="muted">Marked forms only</Badge>}
         />
         <PanelBody className="space-y-4">
@@ -71,18 +72,24 @@ export default async function FormsPage({ params }: { params: Promise<{ siteId: 
               Form checkboxes appear once your privacy notice is published, so each one can link to it.
             </Callout>
           )}
-          <p className="text-xs text-mist">
-            With the banner script installed, add <code className="font-mono text-paper">data-hp-consent</code> to a form, listing the purpose keys to ask about. Add{" "}
-            <code className="font-mono text-paper">data-hp-required</code> for boxes that must be ticked before the form sends. Leave{" "}
-            <code className="font-mono text-paper">data-hp-consent</code> empty to use the purposes chosen below, or set it to <code className="font-mono text-paper">off</code> to skip a form.
-          </p>
-          <div className="flex flex-col gap-3 rounded-field bg-black/50 p-4 sm:flex-row sm:items-center">
-            <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-fog">{snippet}</code>
-            <CopyButton value={snippet} label="Copy attribute" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-fog">
+              No code needed. Pick what to ask below and turn on <strong className="font-medium text-paper">Protect forms automatically</strong>.
+            </p>
+            <FormsIllustration className="sm:w-56" />
           </div>
           <details className="rounded-field border border-line px-4 py-3">
-            <summary className="cursor-pointer text-xs text-fog">Full example and storing proof with each lead</summary>
+            <summary className="cursor-pointer text-xs text-fog">Advanced: choose forms by hand, and store proof with each lead</summary>
             <div className="mt-4 space-y-3 text-xs text-mist">
+              <p>
+                To control a single form, add <code className="font-mono text-paper">data-hp-consent</code> to its opening tag with the purpose keys to ask about, and{" "}
+                <code className="font-mono text-paper">data-hp-required</code> for boxes that must be ticked. Leave it empty to use the purposes chosen below, or set it to{" "}
+                <code className="font-mono text-paper">off</code> to skip a form.
+              </p>
+              <div className="flex flex-col gap-3 rounded-field bg-black/50 p-4 sm:flex-row sm:items-center">
+                <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-fog">{snippet}</code>
+                <CopyButton value={snippet} label="Copy attribute" />
+              </div>
               <pre className="overflow-x-auto rounded-field bg-black/50 p-4 font-mono leading-relaxed text-fog">{example}</pre>
               <p>
                 Each submission also sends a hidden field, <code className="font-mono text-paper">hp_consent_id</code>, holding the receipt id of the consent record. Save it with the lead in
@@ -113,7 +120,11 @@ export default async function FormsPage({ params }: { params: Promise<{ siteId: 
       <Panel>
         <PanelHeader
           title="Forms found on your website"
-          description={scan ? `From the scan on ${formatDateTime(scan.createdAt!)}. Add the suggested attribute to each form's opening tag.` : "Run a scan to find the forms on your website."}
+          description={
+            scan
+              ? `From the scan on ${formatDateTime(scan.createdAt!)}. ${live.auto ? "Automatic protection covers these." : "Turn on automatic protection to cover these, or add the suggested attribute to a form by hand."}`
+              : "Run a scan to find the forms on your website."
+          }
         />
         {!scan || scan.forms.length === 0 ? (
           <EmptyState icon={ClipboardList} title="No forms found" description={scan ? "The last scan didn't find forms asking for personal data. You can still mark forms by hand." : "Scan your website to list the forms that collect personal data."} />

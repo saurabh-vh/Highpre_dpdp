@@ -4,10 +4,67 @@
  */
 
 export const hero = {
-  title: "Get your website ready for India's privacy law.",
+  title: "India's privacy law is here. Get ready in an afternoon.",
   subtitle:
-    "HighPre finds the personal data your site collects, writes your privacy notice in English, Hindi and six more Indian languages, records every consent and tracks data requests to their deadline.",
+    "HighPre makes your website and your team DPDP-ready: a cookie banner, a privacy notice in 8 Indian languages, data requests, breach reporting and proof of every consent, in one simple tool.",
 };
+
+/** Why it matters. Figures are from the DPDP Act 2023 and the DPDP Rules 2025 (notified 13 November 2025). */
+export const stakes = [
+  { figure: "₹250 crore", label: "Maximum penalty for failing to protect personal data." },
+  { figure: "₹200 crore", label: "Maximum penalty for not reporting a data breach." },
+  { figure: "72 hours", label: "To send the Data Protection Board a full report after a breach." },
+  { figure: "13 May 2027", label: "When every core duty applies. The Board is already set up." },
+] as const;
+
+/** Where most websites stand today, and what HighPre changes. */
+export const beforeAfter = [
+  { before: "Google Analytics and ad pixels load before anyone agrees.", after: "Nothing tracks a visitor until they say yes." },
+  { before: "No privacy notice, or one copied from another site.", after: "A clear notice written for you, in your visitor's language." },
+  { before: "No proof of who agreed to what.", after: "Every choice saved with the exact notice they saw." },
+  { before: "Data requests get lost in someone's inbox.", after: "One inbox, every deadline tracked, reminders before it's late." },
+  { before: "Staff paste customer data into ChatGPT.", after: "A warning before it happens, and an alert for you." },
+] as const;
+
+/** The three things HighPre covers. */
+export const pillars = [
+  {
+    id: "website",
+    title: "Your website",
+    pitch: "Compliant from the first visit.",
+    points: [
+      "Scan finds trackers, forms and gaps",
+      "Cookie banner in your brand colours",
+      "Privacy notice in 8 Indian languages",
+      "Consent tick boxes on your forms",
+      "Public privacy page and badge",
+      "Checked again every week",
+    ],
+  },
+  {
+    id: "team",
+    title: "Your team",
+    pitch: "Stops leaks before they happen.",
+    points: [
+      "Desktop app and browser extension",
+      "Warns before private data goes into AI or chat apps",
+      "You get an alert; the data never leaves the computer",
+      "One installer for every company computer",
+    ],
+  },
+  {
+    id: "proof",
+    title: "Your proof",
+    pitch: "Ready when someone asks.",
+    points: [
+      "Consent records you can export",
+      "Data request inbox with deadlines",
+      "72-hour breach checklist",
+      "Vendor list with contract dates",
+      "One-click PDF evidence pack",
+    ],
+  },
+] as const;
 
 export const obligations = [
   {
@@ -37,9 +94,9 @@ export const obligations = [
 ] as const;
 
 export const steps = [
-  { title: "Scan your website", body: "Paste your address. We find forms, trackers and missing notices across your key pages." },
-  { title: "Confirm your purposes", body: "Say why you collect each kind of data and how long you keep it. We write the notice from that." },
-  { title: "Add one line of code", body: "Paste the snippet before </head>. Consent starts recording on your very next visitor." },
+  { title: "Scan your website", body: "Type your address. We show what it collects and what's missing." },
+  { title: "Answer a few questions", body: "Why you collect each kind of data. We write your privacy notice from that." },
+  { title: "Paste one line", body: "Add it to your website once. Switch everything else on from your dashboard." },
 ] as const;
 
 export const faqs = [
@@ -53,7 +110,7 @@ export const faqs = [
   },
   {
     q: "What happens if I ignore it?",
-    a: "The Act allows penalties of up to ₹250 crore per breach of its obligations. Most businesses will feel it first as complaints from customers and questions from larger clients.",
+    a: "Penalties go up to ₹250 crore for failing to protect personal data and up to ₹200 crore for not reporting a breach. Most businesses will feel it first as complaints from customers and questions from larger clients.",
   },
   {
     q: "Is HighPre a registered Consent Manager?",

@@ -15,6 +15,8 @@ type CubeFieldProps = {
   verifiedRatio?: number;
   animate?: boolean;
   cycleSeconds?: number;
+  /** Hold the field still below 640px: hundreds of animated polygons are heavy on phones. */
+  staticOnMobile?: boolean;
   className?: string;
 };
 
@@ -38,6 +40,7 @@ export function CubeField({
   verifiedRatio = 0.12,
   animate = true,
   cycleSeconds = 7,
+  staticOnMobile = false,
   className,
 }: CubeFieldProps) {
   const rand = mulberry32(seed);
@@ -74,7 +77,7 @@ export function CubeField({
 
   return (
     // Callers position the field (absolute to fill a frame, or relative with a height).
-    <div className={cn("overflow-hidden", className)} aria-hidden>
+    <div className={cn("overflow-hidden", staticOnMobile && "max-sm:[&_.cube-face]:![animation:none] max-sm:[&_.scan-beam]:hidden", className)} aria-hidden>
       <svg
         viewBox={`${viewX.toFixed(1)} ${viewY.toFixed(1)} ${viewW.toFixed(1)} ${viewH.toFixed(1)}`}
         preserveAspectRatio="xMidYMid slice"
