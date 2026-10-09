@@ -6,6 +6,11 @@ import "strings"
 // the foreground process name and window title, locally; only the app key
 // (for example "chatgpt") is ever reported, never the title itself.
 // Keep keys in sync with src/lib/agent/catalog.ts.
+//
+// Rules without patterns are watched by the browser extension only. Email and
+// file-sharing sites (Gmail, Outlook, Drive...) are everyday work tools: a
+// clipboard warning whenever one is open would nag, so the desktop agent
+// leaves them to the extension, which checks attached files instead.
 
 type appRule struct {
 	key      string
@@ -22,12 +27,19 @@ var appRules = []appRule{
 	{"meta_ai", []string{"meta ai", "meta.ai"}},
 	{"grok", []string{"grok"}},
 	{"mistral", []string{"le chat", "chat.mistral"}},
+	{"notebooklm", []string{"notebooklm"}},
+	{"poe", []string{"poe.com", "poe.exe"}},
 	{"whatsapp", []string{"whatsapp"}},
 	{"telegram", []string{"telegram"}},
 	{"slack", []string{"slack"}},
 	{"discord", []string{"discord"}},
 	{"teams", []string{"ms-teams", "microsoft teams", "teams.exe", "| microsoft teams"}},
 	{"pastebin", []string{"pastebin"}},
+	{"gmail", nil},
+	{"outlook", nil},
+	{"wetransfer", nil},
+	{"google_drive", nil},
+	{"dropbox", nil},
 }
 
 // ClassifyApp returns the app key for a foreground window, or "" when it isn't a risky destination.
@@ -47,6 +59,8 @@ var appLabels = map[string]string{
 	"chatgpt": "ChatGPT", "claude": "Claude", "gemini": "Gemini", "copilot": "Copilot", "perplexity": "Perplexity",
 	"deepseek": "DeepSeek", "meta_ai": "Meta AI", "grok": "Grok", "mistral": "Le Chat", "whatsapp": "WhatsApp",
 	"telegram": "Telegram", "slack": "Slack", "discord": "Discord", "teams": "Microsoft Teams", "pastebin": "Pastebin",
+	"notebooklm": "NotebookLM", "poe": "Poe", "gmail": "Gmail", "outlook": "Outlook", "wetransfer": "WeTransfer",
+	"google_drive": "Google Drive", "dropbox": "Dropbox",
 }
 
 var dataLabels = map[string]string{

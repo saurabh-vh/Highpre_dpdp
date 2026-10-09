@@ -268,14 +268,27 @@ front, not proof that it was pasted. The browser extension covers both.
 
 ### Browser extension (Chrome, Edge, Brave)
 
-A Manifest V3 extension (`extension/`) that runs only on the AI, chat and paste
-sites in `EXTENSION_SITES` (`src/lib/agent/catalog.ts`). It checks text as it is
+A Manifest V3 extension (`extension/`) that runs only on the AI, chat, email and
+sharing sites in `EXTENSION_SITES` (`src/lib/agent/catalog.ts`). It checks text as it is
 **pasted, dropped or sent** (Enter or a Send button, so typed messages count),
 using `extension/detect.js`, a port of the Go detector; both are tested against
 `agent/testdata/detect_cases.json`. On a match it shows a dialog before the text
-goes in: *Don't paste* / *Paste anyway* / *It isn't sensitive*, or, in block
-mode, only a false-alarm report. The report is `{dataType, app, occurredAt,
-source, outcome}`. Its only host permission is your HighPre server.
+goes in: *Paste with details hidden* (recommended; `mask()` in `detect.js` turns
+`4111 1111 1111 1111` into `•••• •••• •••• 1111`, keys and passwords into
+`[hidden]`/`•••`) / *Don't paste* / *Paste anyway* / *It isn't sensitive*. Block
+mode offers only the hidden version or a false-alarm report.
+
+**Attached files** (file pickers, dropped or pasted files) are read in the
+browser before the site gets them: text formats directly, `.xlsx`/`.docx` by
+unzipping with the browser's `DecompressionStream`, PDFs best effort
+(`extension/files.js`, no libraries). Files over 10 MB, other types, and checks
+taking over 1.5 s go through unchecked, so uploads never break. On Gmail,
+Outlook, Drive, Dropbox and WeTransfer, which are everyday work tools, only
+files and high-severity pastes (passwords, keys, card, bank, Aadhaar) warn.
+
+The report is `{dataType, app, occurredAt, source, outcome, via}`, where `via`
+is `paste`, `typed`, `drop` or `file`; never the text, file name or page. Its
+only host permission is your HighPre server.
 
 Each download is a zip built per person (manifest, config with a device token,
 the watched-site list and icons generated on the server). Install it with
@@ -292,6 +305,27 @@ heartbeat (every 15 minutes) and keep the last one while offline; the server
 also drops events the policy excludes. People can mark their own alerts as *not
 sensitive*, and each data type shows its false-alarm rate over 90 days to help
 tune the list. False alarms are recorded but not emailed.
+
+### AI tools report and protection gaps
+
+**AI tools your team uses** (owners and admins, last 30 days): how many people
+used each AI assistant, with one member's laptop and browser counted once, and
+approved tools marked. No names and no per-person view. Devices keep only
+`{day, apps}` locally (the extension counts AI-site visits by day; the desktop
+agent samples the foreground app every 30 s and keeps only the app key, never
+the title), and send finished days once a day to `POST /api/agent/usage`
+(strict: up to 14 days, AI catalog keys only). One row per device, day and app
+(`AiUsage`), kept 90 days. The setting *Share which AI tools are used* (on by
+default) stops devices sending and the server storing.
+
+**Gaps.** Computers that haven't checked in for 7 days get a badge and a banner.
+When someone removes HighPre it says goodbye: the desktop agent's `--uninstall`
+calls `POST /api/agent/goodbye` (3 s timeout, never blocks removal), and the
+extension's uninstall link opens `GET /api/agent/goodbye?k=<key>` (a per-download
+key, stored hashed). The device shows as *Removed by the user*; it isn't revoked,
+and checking in again clears it. The hourly cron sends owners a weekly digest
+(once per organisation, only when there's something to say): leaks prevented by
+data type and outcome, computers not checking in or removed, and top AI tools.
 
 ### Company-wide install (MDM)
 

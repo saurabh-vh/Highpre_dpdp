@@ -169,6 +169,88 @@
     return found;
   }
 
-  root.HighPreDetect = { detect: detect };
-  if (typeof module !== "undefined" && module.exports) module.exports = { detect: detect };
+  /* ── Hiding private details ──
+   * mask() rewrites text so the parts detect() flags are hidden but the rest of
+   * the message still reads naturally. It is built from the same patterns as
+   * detect(), so whatever detect() finds, mask() hides. Secrets become
+   * "[hidden]" (or "•••" after a "password:" label or in a URL, where a longer
+   * token would still look like a password); numbers keep their last digits so
+   * the person can still tell which one it was.
+   */
+
+  var HIDDEN = "[hidden]";
+  var SHORT = "•••";
+
+  function g(re) {
+    return new RegExp(re.source, re.flags.indexOf("g") >= 0 ? re.flags : re.flags + "g");
+  }
+
+  var mPrivateKeyBlock = /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY(?: BLOCK)?-----|$)/g;
+  var mAPIKeys = reAPIKeys.slice(0, -1).map(g);
+  var mLabelledKey = /(\b(?:api[_-]?key|secret[_-]?key|client[_-]?secret|access[_-]?token|auth[_-]?token)\b\s*["']?\s*[:=]\s*["']?)[A-Za-z0-9_\-/+=.]{16,}/gi;
+  var mPasswordField = /((?:\bpassword|\bpasswd|\bpwd|\bpass\s*code|पासवर्ड)\s*["']?\s*[:=]\s*["']?)\S{6,}/gi;
+  var mURLCreds = /(\b[a-z][a-z0-9+.-]*:\/\/[^\s:/@]+:)[^\s:/@]{4,}(@)/g;
+  var mAccountLabel = /(\b(?:a\/c|acct|account)\s*(?:no\.?|number|#)?\s*[:-]?\s*)(\d{9,18})\b/gi;
+  var mAccountNumber = g(reAccountNumber);
+  var mPAN = g(rePAN);
+  var mPassport = g(rePassport);
+
+  function isCard(m) {
+    var d = digitsOnly(m);
+    return d.length >= 13 && d.length <= 19 && luhn(d) && CARD_PREFIXES.some(function (p) { return d.indexOf(p) === 0; });
+  }
+
+  function maskOnce(text, bare) {
+    text = text.replace(mPrivateKeyBlock, HIDDEN);
+    mAPIKeys.forEach(function (re) { text = text.replace(re, HIDDEN); });
+    text = text.replace(mLabelledKey, "$1" + HIDDEN);
+    text = text.replace(mPasswordField, "$1" + SHORT);
+    text = text.replace(mURLCreds, "$1" + SHORT + "$2");
+    if (bare && looksLikeBarePassword(text)) text = text.replace(text.trim(), HIDDEN);
+    text = text.replace(reCardCandidate, function (m) {
+      return isCard(m) ? "•••• •••• •••• " + digitsOnly(m).slice(-4) : m;
+    });
+    text = text.replace(reAadhaar, function (m) {
+      var d = digitsOnly(m);
+      return d.length === 12 && verhoeff(d) ? "XXXX XXXX " + d.slice(-4) : m;
+    });
+    text = text.replace(mAccountLabel, function (m, label, num) { return label + "XXXX" + num.slice(-4); });
+    if (reIFSC.test(text)) text = text.replace(mAccountNumber, function (m) { return "XXXX" + m.slice(-4); });
+    text = text.replace(mPAN, function (m) { return "XXXXX" + m.slice(5, 9) + "X"; });
+    if (rePassportLabel.test(text)) text = text.replace(mPassport, function (m) { return m[0] + "XXXXX" + m.slice(-2); });
+    // Contacts are hidden only when they form a list (what detect() flags);
+    // a single colleague's email or phone number in a message is left alone.
+    if (countDistinct(findAll(reEmail, text, 200)) >= 10) {
+      text = text.replace(reEmail, function (m) {
+        var at = m.indexOf("@");
+        return m[0] + "•••" + m.slice(at);
+      });
+    }
+    if (countDistinct(findAll(reIndianMobile, text, 200)) >= 10) {
+      text = text.replace(reIndianMobile, function (m) { return "••••••••" + digitsOnly(m).slice(-2); });
+    }
+    return text;
+  }
+
+  /**
+   * Hides the sensitive values in text. Returns { text, kinds }: the rewritten
+   * text and the kinds of data that were found and are now hidden.
+   * options.bare works as in detect().
+   */
+  function mask(text, options) {
+    if (typeof text !== "string") return { text: "", kinds: [] };
+    var bare = !options || options.bare !== false;
+    var before = detect(text, options);
+    var out = text;
+    // Hiding one value can't reveal another, but a second pass is cheap insurance.
+    for (var i = 0; i < 3; i++) {
+      out = maskOnce(out, bare);
+      if (detect(out, options).length === 0) break;
+    }
+    var after = detect(out, options);
+    return { text: out, kinds: before.filter(function (k) { return after.indexOf(k) < 0; }) };
+  }
+
+  root.HighPreDetect = { detect: detect, mask: mask };
+  if (typeof module !== "undefined" && module.exports) module.exports = { detect: detect, mask: mask };
 })(typeof self !== "undefined" ? self : globalThis);

@@ -50,14 +50,18 @@ func TestBulkContacts(t *testing.T) {
 
 func TestClassifyApp(t *testing.T) {
 	cases := map[[2]string]string{
-		{"chrome.exe", "ChatGPT - Google Chrome"}:            "chatgpt",
-		{"msedge.exe", "Claude - Microsoft Edge"}:             "claude",
-		{"Claude.exe", ""}:                                    "claude",
-		{"Google Chrome", "Google Gemini"}:                    "gemini",
-		{"WhatsApp.exe", "WhatsApp"}:                          "whatsapp",
-		{"ms-teams.exe", "Chat | Microsoft Teams"}:            "teams",
-		{"winword.exe", "Quarterly report - Word"}:            "",
-		{"chrome.exe", "Inbox (3) - priya@acme.in - Gmail"}:   "",
+		{"chrome.exe", "ChatGPT - Google Chrome"}:           "chatgpt",
+		{"msedge.exe", "Claude - Microsoft Edge"}:           "claude",
+		{"Claude.exe", ""}:                                  "claude",
+		{"Google Chrome", "Google Gemini"}:                  "gemini",
+		{"WhatsApp.exe", "WhatsApp"}:                        "whatsapp",
+		{"ms-teams.exe", "Chat | Microsoft Teams"}:          "teams",
+		{"winword.exe", "Quarterly report - Word"}:          "",
+		{"chrome.exe", "Inbox (3) - priya@acme.in - Gmail"}: "",
+		{"OUTLOOK.EXE", "Inbox - Outlook"}:                  "",
+		{"chrome.exe", "NotebookLM - Google Chrome"}:        "notebooklm",
+		{"msedge.exe", "Poe - Fast AI Chat | poe.com"}:      "poe",
+		{"chrome.exe", "The Raven by Edgar Allan Poe"}:      "",
 	}
 	for in, want := range cases {
 		if got := ClassifyApp(in[0], in[1]); got != want {

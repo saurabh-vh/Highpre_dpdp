@@ -30,12 +30,22 @@ export const AGENT_APPS = {
   meta_ai: { label: "Meta AI", category: "ai" },
   grok: { label: "Grok", category: "ai" },
   mistral: { label: "Mistral Le Chat", category: "ai" },
+  notebooklm: { label: "NotebookLM", category: "ai" },
+  poe: { label: "Poe", category: "ai" },
   whatsapp: { label: "WhatsApp", category: "chat" },
   telegram: { label: "Telegram", category: "chat" },
   slack: { label: "Slack", category: "chat" },
   discord: { label: "Discord", category: "chat" },
   teams: { label: "Microsoft Teams", category: "chat" },
   pastebin: { label: "Pastebin", category: "sharing" },
+  // Everyday work tools: the extension warns there only for attached files and
+  // high-severity pastes (see extension/content.js), and the desktop agent
+  // doesn't watch them (agent/apps.go).
+  gmail: { label: "Gmail", category: "email" },
+  outlook: { label: "Outlook", category: "email" },
+  wetransfer: { label: "WeTransfer", category: "sharing" },
+  google_drive: { label: "Google Drive", category: "sharing" },
+  dropbox: { label: "Dropbox", category: "sharing" },
 } as const;
 
 export type AgentApp = keyof typeof AGENT_APPS;
@@ -68,6 +78,8 @@ export const EXTENSION_SITES: Record<string, AgentApp> = {
   "www.meta.ai": "meta_ai",
   "grok.com": "grok",
   "chat.mistral.ai": "mistral",
+  "notebooklm.google.com": "notebooklm",
+  "poe.com": "poe",
   "web.whatsapp.com": "whatsapp",
   "web.telegram.org": "telegram",
   "app.slack.com": "slack",
@@ -75,6 +87,13 @@ export const EXTENSION_SITES: Record<string, AgentApp> = {
   "teams.microsoft.com": "teams",
   "teams.live.com": "teams",
   "pastebin.com": "pastebin",
+  "mail.google.com": "gmail",
+  "outlook.live.com": "outlook",
+  "outlook.office.com": "outlook",
+  "outlook.office365.com": "outlook",
+  "wetransfer.com": "wetransfer",
+  "drive.google.com": "google_drive",
+  "www.dropbox.com": "dropbox",
 };
 
 /** Where a detection came from, and what the person did about it. */
@@ -85,11 +104,17 @@ export const ALERT_OUTCOMES = {
   blocked: "Blocked",
   sent_anyway: "Continued anyway",
   not_sensitive: "Said not sensitive",
+  masked: "Sent with details hidden",
 } as const;
 export type AlertOutcome = keyof typeof ALERT_OUTCOMES;
 export const ALERT_OUTCOME_KEYS = Object.keys(ALERT_OUTCOMES) as [AlertOutcome, ...AlertOutcome[]];
+/** How the data was on its way out: shown to owners as one small word. */
+export const ALERT_VIAS = { paste: "pasted", typed: "typed", drop: "dropped", file: "file", clipboard: "copied" } as const;
+export type AlertVia = keyof typeof ALERT_VIAS;
+export const ALERT_VIA_KEYS = Object.keys(ALERT_VIAS) as [AlertVia, ...AlertVia[]];
 
 export const dataTypeLabel = (key: string) => AGENT_DATA_TYPES[key as AgentDataType]?.label ?? key;
+export const alertViaLabel = (key: string) => ALERT_VIAS[key as AlertVia] ?? "";
 export const appLabel = (key: string) => AGENT_APPS[key as AgentApp]?.label ?? key;
 export const appCategoryLabel = (key: string) =>
-  ({ ai: "AI assistant", chat: "Chat app", sharing: "Paste or sharing site" })[AGENT_APPS[key as AgentApp]?.category ?? ""] ?? "App";
+  ({ ai: "AI assistant", chat: "Chat app", email: "Email", sharing: "Paste or sharing site" })[AGENT_APPS[key as AgentApp]?.category ?? ""] ?? "App";

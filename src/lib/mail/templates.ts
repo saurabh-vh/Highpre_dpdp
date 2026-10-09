@@ -1,4 +1,4 @@
-import { appLabel, dataTypeLabel } from "@/lib/agent/catalog";
+import { ALERT_OUTCOMES, appLabel, dataTypeLabel } from "@/lib/agent/catalog";
 import { requestTypeLabel } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import type { Mail } from "./mailer";
@@ -246,6 +246,48 @@ export function siteChangesAlertEmail(opts: { to: string; siteName: string; chan
        <ul style="padding-left:18px">${lines.map((l) => `<li>${escape(l)}</li>`).join("")}</ul>
        ${button(opts.url, "Open the scan")}
        <p style="color:#8e8e93">You can turn weekly monitoring off in the website's settings.</p>`,
+    ),
+  };
+}
+
+/** Weekly agent summary for owners: company totals only, never who. */
+export function agentDigestEmail(opts: {
+  to: string;
+  orgName: string;
+  url: string;
+  prevented: number;
+  byDataType: { key: string; count: number }[];
+  byOutcome: { key: string; count: number }[];
+  notCheckingIn: number;
+  removed: number;
+  aiTools: { app: string; people: number }[];
+}): Mail {
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const outcomeLabel = (k: string) => (ALERT_OUTCOMES as Record<string, string>)[k] ?? k;
+  const sections: { title: string; lines: string[] }[] = [];
+  if (opts.byDataType.length) {
+    sections.push({ title: "Private data caught", lines: opts.byDataType.map((d) => `${dataTypeLabel(d.key)}: ${d.count}`) });
+    sections.push({ title: "What happened", lines: opts.byOutcome.map((o) => `${outcomeLabel(o.key)}: ${o.count}`) });
+  }
+  const gaps = [
+    ...(opts.notCheckingIn ? [`${plural(opts.notCheckingIn, "computer hasn't", "computers haven't")} checked in for a week.`] : []),
+    ...(opts.removed ? [`${plural(opts.removed, "computer", "computers")} had HighPre removed this week.`] : []),
+  ];
+  if (gaps.length) sections.push({ title: "Computers to check", lines: gaps });
+  if (opts.aiTools.length) sections.push({ title: "AI tools your team used", lines: opts.aiTools.map((t) => `${appLabel(t.app)}: ${plural(t.people, "person", "people")}`) });
+  const headline = opts.prevented
+    ? `HighPre stopped private data from leaving ${plural(opts.prevented, "time", "times")} this week.`
+    : `Here's your HighPre week at ${opts.orgName}.`;
+  return {
+    to: opts.to,
+    subject: `Your HighPre week — ${opts.orgName}`,
+    text: `${headline}\n\n${sections.map((s) => `${s.title}\n${s.lines.map((l) => `- ${l}`).join("\n")}`).join("\n\n")}\n\nCompany totals only. See more: ${opts.url}`,
+    html: layout(
+      "Your HighPre week",
+      `<p>${escape(headline)}</p>
+       ${sections.map((s) => `<p style="margin:16px 0 4px"><strong>${escape(s.title)}</strong></p><ul style="padding-left:18px;margin:0">${s.lines.map((l) => `<li>${escape(l)}</li>`).join("")}</ul>`).join("")}
+       ${button(opts.url, "Open Desktop agent")}
+       <p style="color:#8e8e93">Company totals only. HighPre never sees what anyone types or copies.</p>`,
     ),
   };
 }

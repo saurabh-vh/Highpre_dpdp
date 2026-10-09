@@ -26,6 +26,23 @@ export const beforeAfter = [
   { before: "Staff paste customer data into ChatGPT.", after: "A warning before it happens, and an alert for you." },
 ] as const;
 
+/** For your team: protection without surveillance. */
+export const team = {
+  title: "Protects your team. Doesn't watch them.",
+  subtitle: "Most leaks are honest mistakes: a spreadsheet dropped into ChatGPT, a card number pasted in WhatsApp. HighPre catches them in the moment, kindly.",
+  features: [
+    { id: "files", title: "Checks files before they're shared", body: "Customer lists, invoices and ID scans get a quick check before they reach an AI tool, chat or WeTransfer." },
+    { id: "mask", title: "Hides private details, keeps work moving", body: "One click sends the message with card, phone and Aadhaar numbers masked. No blocking, no friction." },
+    { id: "ai", title: "See which AI tools your company uses", body: "Company totals only, like \"12 people use ChatGPT\". Never who, never what they typed." },
+    { id: "gaps", title: "Know every computer is covered", body: "A heads-up if a laptop stops checking in or HighPre is removed, plus a short weekly summary." },
+  ],
+  trust: [
+    { who: "Your employee sees", what: "A friendly heads-up before a mistake, and the choice to hide the details." },
+    { who: "You see", what: "What kind of data, which app and what they chose. Plus company totals." },
+    { who: "HighPre never sees", what: "Messages, files, browsing history or screens. Checks run on the computer." },
+  ],
+} as const;
+
 /** The three things HighPre covers. */
 export const pillars = [
   {
@@ -46,9 +63,10 @@ export const pillars = [
     title: "Your team",
     pitch: "Stops leaks before they happen.",
     points: [
-      "Desktop app and browser extension",
-      "Warns before private data goes into AI or chat apps",
-      "You get an alert; the data never leaves the computer",
+      "Catches private data before it reaches AI or chat apps",
+      "Checks files before they're shared",
+      "Hides card and ID numbers in one click",
+      "See which AI tools your company uses",
       "One installer for every company computer",
     ],
   },

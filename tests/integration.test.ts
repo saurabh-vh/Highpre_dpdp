@@ -183,6 +183,25 @@ describe("desktop agent ingestion", () => {
     expect(alerts[1].notSensitiveAt).toBeInstanceOf(Date);
   });
 
+  it("keeps how data was shared apart when folding repeats", async () => {
+    const { ingestAlerts } = await import("@/lib/agent/ingest");
+    const { AgentAlert, AgentDevice, Organization, User } = await import("@/models");
+    const owner = await User.create({ name: "Owner", email: `via${Date.now()}@x.in`, passwordHash: "x" });
+    const org = await Organization.create({ name: "Via Org", members: [{ userId: owner._id, role: "owner" }] });
+    const device = (await AgentDevice.create({ orgId: org._id, userId: owner._id, tokenHash: `v${Date.now()}`, platform: "browser" })).toObject();
+    const at = new Date();
+    const event = { dataType: "card_number" as const, app: "gmail" as const, source: "extension" as const, outcome: "masked" as const };
+    const stored = await ingestAlerts(device, [
+      { ...event, occurredAt: at, via: "paste" },
+      { ...event, occurredAt: new Date(at.getTime() + 1000), via: "paste" },
+      { ...event, occurredAt: at, via: "file" },
+      { ...event, occurredAt: at },
+    ]);
+    expect(stored).toBe(3);
+    const alerts = await AgentAlert.find({ deviceId: device._id }).lean();
+    expect(alerts.map((a) => [a.via ?? null, a.count]).sort()).toEqual([["file", 1], ["paste", 2], [null, 1]].sort());
+  });
+
   it("enrols company installs with a derived key, reuses the device and keeps removed computers out", async () => {
     const { POST } = await import("@/app/api/agent/enroll/route");
     const { enrollKeyFor, parseEnrollKey } = await import("@/lib/agent/policy");

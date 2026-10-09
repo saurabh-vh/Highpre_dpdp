@@ -11,6 +11,8 @@ export type AgentPolicySettings = {
   extensionMode: "warn" | "block";
   enrollmentEnabled: boolean;
   enrollKeyVersion: number;
+  /** Devices report which AI tools were opened on which days; owners see company totals only. */
+  shareAiUsage: boolean;
 };
 
 const DEFAULTS: AgentPolicySettings = {
@@ -19,6 +21,7 @@ const DEFAULTS: AgentPolicySettings = {
   extensionMode: "warn",
   enrollmentEnabled: false,
   enrollKeyVersion: 1,
+  shareAiUsage: true,
 };
 
 /** The organisation's agent settings, or the defaults (watch everything, approve nothing). */
@@ -31,11 +34,17 @@ export async function getAgentPolicy(orgId: Types.ObjectId | string): Promise<Ag
     extensionMode: doc.extensionMode as "warn" | "block",
     enrollmentEnabled: doc.enrollmentEnabled,
     enrollKeyVersion: doc.enrollKeyVersion,
+    shareAiUsage: doc.shareAiUsage !== false,
   };
 }
 
 /** The part of the policy every device receives. Nothing identifying. */
-export const devicePolicy = (p: AgentPolicySettings) => ({ dataTypes: p.dataTypes, allowedApps: p.allowedApps, extensionMode: p.extensionMode });
+export const devicePolicy = (p: AgentPolicySettings) => ({
+  dataTypes: p.dataTypes,
+  allowedApps: p.allowedApps,
+  extensionMode: p.extensionMode,
+  shareAiUsage: p.shareAiUsage,
+});
 
 /*
  * Company enrolment keys are derived, not stored: hpe_<orgId>.<version>.<mac>.

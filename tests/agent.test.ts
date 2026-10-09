@@ -26,6 +26,14 @@ describe("agent alert validation", () => {
     expect(alertsSchema.safeParse({ events: [{ ...event, outcome: "pasted: 4111 1111 1111 1111" }] }).success).toBe(false);
   });
 
+  it("accepts how it was shared and the hidden-details outcome, only from known values", () => {
+    for (const via of ["paste", "typed", "drop", "file", "clipboard"]) {
+      expect(alertsSchema.safeParse({ events: [{ ...event, source: "extension", outcome: "masked", via }] }).success, via).toBe(true);
+    }
+    expect(alertsSchema.safeParse({ events: [{ ...event, via: "customers.xlsx" }] }).success).toBe(false);
+    expect(alertsSchema.safeParse({ events: [{ ...event, outcome: "hidden" }] }).success).toBe(false);
+  });
+
   it("caps batch size", () => {
     expect(alertsSchema.safeParse({ events: Array(51).fill(event) }).success).toBe(false);
   });
@@ -43,6 +51,7 @@ describe("catalog matches the Go agent", () => {
     const apps = readFileSync("agent/apps.go", "utf8");
     for (const key of AGENT_DATA_TYPE_KEYS) expect(detect, key).toContain(`add("${key}")`);
     for (const key of AGENT_APP_KEYS) expect(apps, key).toContain(`{"${key}",`);
+    for (const key of AGENT_APP_KEYS) expect(apps, key).toContain(`"${key}": "`); // and a label
   });
 });
 

@@ -152,7 +152,7 @@ export function AgentPolicyForm({
 }: {
   dataTypes: (Option & { hint: string })[];
   apps: readonly Option[];
-  value: { dataTypes: string[]; allowedApps: string[]; extensionMode: "warn" | "block" };
+  value: { dataTypes: string[]; allowedApps: string[]; extensionMode: "warn" | "block"; shareAiUsage: boolean };
 }) {
   const { state, pending, formProps } = useActionForm(saveAgentPolicyAction);
   return (
@@ -193,8 +193,15 @@ export function AgentPolicyForm({
             </label>
           ))}
         </div>
-        
       </fieldset>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-field border border-line px-3.5 py-2.5 hover:border-white/25">
+        <input type="checkbox" name="shareAiUsage" defaultChecked={value.shareAiUsage} className="mt-0.5 size-4 shrink-0 accent-white" />
+        <span>
+          <span className="block text-sm">Share which AI tools are used (company totals only)</span>
+          <span className="block text-2xs text-mist">Only the tool and the day. You see how many people use each tool, never who or what they typed.</span>
+        </span>
+      </label>
 
       <div className="flex flex-wrap items-center gap-3">
         <SubmitButton pending={pending} pendingLabel="Saving…">Save settings</SubmitButton>

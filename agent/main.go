@@ -37,11 +37,7 @@ func hasFlag(flag string) bool {
 
 func main() {
 	if hasFlag("--uninstall") {
-		stopRunning()
-		uninstall()
-		if !hasFlag("--quiet") {
-			notify("HighPre Agent removed", "The agent has been removed from this computer.")
-		}
+		uninstallByUser(hasFlag("--quiet"))
 		return
 	}
 
@@ -140,6 +136,23 @@ func enrollUntilDone(cfg Config) Config {
 		if wait < time.Hour {
 			wait *= 2
 		}
+	}
+}
+
+// removeAgent is the platform uninstall, swappable in tests.
+var removeAgent = uninstall
+
+// uninstallByUser runs for --uninstall: the person (or their IT team) is
+// removing the agent. HighPre is told first, so owners can see the gap; a
+// failure there never stops the removal.
+func uninstallByUser(quiet bool) {
+	if cfg, err := loadConfig(true); err == nil {
+		goodbye(cfg)
+	}
+	stopRunning()
+	removeAgent()
+	if !quiet {
+		notify("HighPre Agent removed", "The agent has been removed from this computer.")
 	}
 }
 

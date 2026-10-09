@@ -4,8 +4,8 @@ import { join } from "path";
 import { AGENT_PLATFORMS, type AgentPlatform, type DesktopPlatform } from "./catalog";
 import { createZip } from "./zip";
 
-/** Configuration baked into each download; read by agent/config.go. */
-export type AgentConfig = { apiUrl: string; token: string; orgName: string; userName: string };
+/** Configuration baked into each download; read by agent/config.go. `uninstallKey`: browser extension only. */
+export type AgentConfig = { apiUrl: string; token: string; orgName: string; userName: string; uninstallKey?: string };
 /** Company installers carry an enrolment key instead of a device token. */
 export type CompanyConfig = { apiUrl: string; enrollKey: string; orgName: string };
 

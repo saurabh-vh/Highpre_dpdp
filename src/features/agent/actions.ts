@@ -20,7 +20,7 @@ export async function revokeDeviceAction(deviceId: string): Promise<ActionState>
   if (!own && !can(role, "team")) return fail(denied("team"));
   await AgentDevice.updateOne({ _id: device._id }, { revokedAt: new Date() });
   await audit(org._id, user, "agent.revoked", `Removed HighPre from ${device.hostname || "a device that never connected"}`);
-  revalidatePath("/dashboard/agent");
+  revalidatePath("/dashboard/agent", "layout");
   return succeed("Device removed. It turns itself off the next time it checks in.");
 }
 
@@ -45,7 +45,7 @@ export async function markNotSensitiveAction(alertId: string): Promise<ActionSta
     { notSensitiveAt: new Date() },
   );
   if (!modifiedCount) return fail("Alert not found.");
-  revalidatePath("/dashboard/agent");
+  revalidatePath("/dashboard/agent", "layout");
   return succeed("Thanks. Your owners will see this was a false alarm.");
 }
 
@@ -53,6 +53,7 @@ const policySchema = z.object({
   dataTypes: z.array(z.enum(AGENT_DATA_TYPE_KEYS)).min(1, "Choose at least one kind of data to watch for."),
   allowedApps: z.array(z.enum(AGENT_APP_KEYS)),
   extensionMode: z.enum(["warn", "block"]),
+  shareAiUsage: z.boolean(),
 });
 
 /** What every agent and extension in the organisation watches for. Devices pick it up at their next check-in. */
@@ -63,12 +64,13 @@ export async function saveAgentPolicyAction(_prev: ActionState, formData: FormDa
     dataTypes: formData.getAll("dataTypes"),
     allowedApps: formData.getAll("allowedApps"),
     extensionMode: formData.get("extensionMode"),
+    shareAiUsage: formData.get("shareAiUsage") === "on",
   });
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "Check the settings.");
   await AgentPolicy.updateOne({ orgId: org._id }, { $set: parsed.data }, { upsert: true, setDefaultsOnInsert: true });
   const approved = parsed.data.allowedApps.length ? `, ${parsed.data.allowedApps.length} approved app(s)` : "";
-  await audit(org._id, user, "agent.policy", `Updated agent settings: ${parsed.data.dataTypes.length} kinds of data watched${approved}, extension set to ${parsed.data.extensionMode}`);
-  revalidatePath("/dashboard/agent");
+  await audit(org._id, user, "agent.policy", `Updated agent settings: ${parsed.data.dataTypes.length} kinds of data watched${approved}, extension set to ${parsed.data.extensionMode}, AI tools report ${parsed.data.shareAiUsage ? "on" : "off"}`);
+  revalidatePath("/dashboard/agent", "layout");
   return succeed("Saved. Computers and browsers pick this up within 15 minutes.");
 }
 
@@ -78,7 +80,7 @@ export async function setEnrollmentAction(enabled: boolean): Promise<ActionState
   if (!can(role, "team")) return fail(denied("team"));
   await AgentPolicy.updateOne({ orgId: org._id }, { $set: { enrollmentEnabled: enabled } }, { upsert: true, setDefaultsOnInsert: true });
   await audit(org._id, user, "agent.enrollment", enabled ? "Turned on company installs" : "Turned off company installs");
-  revalidatePath("/dashboard/agent");
+  revalidatePath("/dashboard/agent", "layout");
   return succeed(enabled ? "Company installs are on." : "Company installs are off. Computers already set up keep working.");
 }
 
@@ -92,6 +94,6 @@ export async function rotateEnrollKeyAction(): Promise<ActionState> {
     { upsert: true, setDefaultsOnInsert: true },
   );
   await audit(org._id, user, "agent.enroll_key_rotated", "Replaced the company installer key");
-  revalidatePath("/dashboard/agent");
+  revalidatePath("/dashboard/agent", "layout");
   return succeed("Key replaced. Download the company installer again and redeploy it; the old one no longer works.");
 }

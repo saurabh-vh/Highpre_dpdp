@@ -3,6 +3,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -115,15 +116,52 @@ func xmlEscape(s string) string {
 	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&apos;").Replace(s)
 }
 
-// notify shows a Windows toast notification via PowerShell's built-in toast API.
+//go:embed assets/highpre.png
+var logoPNG []byte
+
+// Notifications appear as "HighPre" with its logo: the app ID is registered
+// for this user under HKCU\Software\Classes\AppUserModelId (the documented way
+// for unpackaged desktop apps), with a display name and icon.
+const (
+	toastAppID    = "HighPre.Agent"
+	toastAppKey   = `HKCU\Software\Classes\AppUserModelId\` + toastAppID
+	powershellApp = `{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe`
+)
+
+func logoPath() string { return filepath.Join(dataDir(), "highpre.png") }
+
+// registerToastApp writes the logo and registers the HighPre notification identity. Safe to repeat.
+func registerToastApp() bool {
+	if err := os.MkdirAll(dataDir(), 0o700); err != nil {
+		return false
+	}
+	if err := os.WriteFile(logoPath(), logoPNG, 0o644); err != nil {
+		return false
+	}
+	if reg("add", toastAppKey, "/v", "DisplayName", "/t", "REG_SZ", "/d", "HighPre", "/f") != nil {
+		return false
+	}
+	_ = reg("add", toastAppKey, "/v", "IconUri", "/t", "REG_SZ", "/d", logoPath(), "/f")
+	_ = reg("add", toastAppKey, "/v", "IconBackgroundColor", "/t", "REG_SZ", "/d", "FF000000", "/f")
+	return true
+}
+
+var toastAppReady = false
+
+// notify shows a Windows toast notification from "HighPre", with the logo.
 func notify(title, body string) {
+	app, image := powershellApp, ""
+	if toastAppReady || registerToastApp() {
+		toastAppReady = true
+		app = toastAppID
+		image = `<image placement="appLogoOverride" src="` + xmlEscape("file:///"+filepath.ToSlash(logoPath())) + `"/>`
+	}
 	script := fmt.Sprintf(`[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml('<toast><visual><binding template="ToastGeneric"><text>%s</text><text>%s</text></binding></visual></toast>')
-$app = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($app).Show([Windows.UI.Notifications.ToastNotification]::new($xml))`,
-		strings.ReplaceAll(xmlEscape(title), "'", "''"), strings.ReplaceAll(xmlEscape(body), "'", "''"))
+$xml.LoadXml('<toast><visual><binding template="ToastGeneric">%s<text>%s</text><text>%s</text></binding></visual></toast>')
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('%s').Show([Windows.UI.Notifications.ToastNotification]::new($xml))`,
+		strings.ReplaceAll(image, "'", "''"), strings.ReplaceAll(xmlEscape(title), "'", "''"), strings.ReplaceAll(xmlEscape(body), "'", "''"), app)
 	u := utf16.Encode([]rune(script))
 	b := make([]byte, len(u)*2)
 	for i, v := range u {
@@ -243,7 +281,8 @@ func uninstall() {
 	_ = reg("delete", runKey, "/v", "HighPreAgent", "/f")
 	_ = reg("delete", uninstallKey, "/f")
 	dir := dataDir()
-	_ = hidden(exec.Command("cmd", "/c", "ping -n 3 127.0.0.1 >nul & rmdir /s /q \""+dir+"\"")).Start()
+	// The notification identity goes a few seconds later, after the "removed" message has used it.
+	_ = hidden(exec.Command("cmd", "/c", "ping -n 3 127.0.0.1 >nul & reg delete \""+toastAppKey+"\" /f >nul 2>&1 & rmdir /s /q \""+dir+"\"")).Start()
 }
 
 func copyFile(src, dst string) error {

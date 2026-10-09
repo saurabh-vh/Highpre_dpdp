@@ -6,6 +6,7 @@ import { Pillars } from "@/components/marketing/pillars";
 import { Pricing } from "@/components/marketing/pricing";
 import { Stakes } from "@/components/marketing/stakes";
 import { Steps } from "@/components/marketing/steps";
+import { Team } from "@/components/marketing/team";
 
 export default function HomePage() {
   return (
@@ -13,6 +14,7 @@ export default function HomePage() {
       <Hero />
       <Stakes />
       <Pillars />
+      <Team />
       <Obligations />
       <Steps />
       <Pricing />

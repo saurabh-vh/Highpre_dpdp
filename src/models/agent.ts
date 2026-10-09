@@ -1,5 +1,5 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
-import { AGENT_APP_KEYS, AGENT_DATA_TYPE_KEYS, AGENT_PLATFORM_KEYS, ALERT_OUTCOME_KEYS, ALERT_SOURCES } from "@/lib/agent/catalog";
+import { AGENT_APP_KEYS, AGENT_DATA_TYPE_KEYS, AGENT_PLATFORM_KEYS, ALERT_OUTCOME_KEYS, ALERT_SOURCES, ALERT_VIA_KEYS } from "@/lib/agent/catalog";
 
 /**
  * A desktop agent or browser extension install. Each personal download creates
@@ -24,6 +24,10 @@ const agentDeviceSchema = new Schema(
     firstSeenAt: { type: Date },
     lastSeenAt: { type: Date },
     revokedAt: { type: Date },
+    /** The person uninstalled HighPre (the agent or extension said goodbye). Recorded only; the token isn't revoked. */
+    uninstalledAt: { type: Date },
+    /** Browser extension: hash of the secret in its uninstall link (GET /api/agent/goodbye?k=). */
+    uninstallKeyHash: { type: String },
     /** Throttles alert emails to owners. */
     lastEmailAt: { type: Date },
   },
@@ -31,6 +35,7 @@ const agentDeviceSchema = new Schema(
 );
 
 agentDeviceSchema.index({ orgId: 1, enrolled: 1, hostname: 1, osUser: 1 });
+agentDeviceSchema.index({ uninstallKeyHash: 1 }, { sparse: true });
 
 /**
  * One detection: a type of sensitive data was on the clipboard while a risky
@@ -47,7 +52,9 @@ const agentAlertSchema = new Schema(
     severity: { type: String, enum: ["high", "medium"], required: true },
     source: { type: String, enum: ALERT_SOURCES, default: "agent" },
     outcome: { type: String, enum: ALERT_OUTCOME_KEYS, default: "warned" },
-    /** Repeats of the same type, app and outcome within 10 minutes are folded into one alert. */
+    /** How it was on its way out (pasted, typed, an attached file...), when known. */
+    via: { type: String, enum: ALERT_VIA_KEYS },
+    /** Repeats of the same type, app, outcome and via within 10 minutes are folded into one alert. */
     count: { type: Number, default: 1 },
     occurredAt: { type: Date, required: true },
     lastOccurredAt: { type: Date, required: true },
@@ -78,6 +85,10 @@ const agentPolicySchema = new Schema(
     enrollmentEnabled: { type: Boolean, default: false },
     enrollKeyVersion: { type: Number, default: 1 },
     enrollKeyRotatedAt: { type: Date },
+    /** Devices report which AI tools were opened on which days (company totals only). */
+    shareAiUsage: { type: Boolean, default: true },
+    /** Throttles the weekly owner digest. */
+    lastDigestAt: { type: Date },
   },
   { timestamps: true },
 );

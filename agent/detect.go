@@ -17,15 +17,15 @@ const maxScanBytes = 200_000
 var (
 	rePrivateKey = regexp.MustCompile(`-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----`)
 	reAPIKeys    = []*regexp.Regexp{
-		regexp.MustCompile(`\bAKIA[0-9A-Z]{16}\b`),                       // AWS access key
-		regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9]{36,}\b`),             // GitHub token
-		regexp.MustCompile(`\bgithub_pat_[A-Za-z0-9_]{40,}\b`),           // GitHub fine-grained token
-		regexp.MustCompile(`\bsk_live_[0-9A-Za-z]{20,}\b`),               // Stripe
-		regexp.MustCompile(`\brzp_live_[A-Za-z0-9]{14,}\b`),              // Razorpay
-		regexp.MustCompile(`\bsk-ant-[A-Za-z0-9_\-]{20,}`),               // Anthropic
-		regexp.MustCompile(`\bsk-(?:proj-)?[A-Za-z0-9_\-]{32,}`),         // OpenAI
-		regexp.MustCompile(`\bAIza[0-9A-Za-z_\-]{35}\b`),                 // Google API key
-		regexp.MustCompile(`\bxox[abprs]-[A-Za-z0-9\-]{10,}`),            // Slack
+		regexp.MustCompile(`\bAKIA[0-9A-Z]{16}\b`),                                                  // AWS access key
+		regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9]{36,}\b`),                                        // GitHub token
+		regexp.MustCompile(`\bgithub_pat_[A-Za-z0-9_]{40,}\b`),                                      // GitHub fine-grained token
+		regexp.MustCompile(`\bsk_live_[0-9A-Za-z]{20,}\b`),                                          // Stripe
+		regexp.MustCompile(`\brzp_live_[A-Za-z0-9]{14,}\b`),                                         // Razorpay
+		regexp.MustCompile(`\bsk-ant-[A-Za-z0-9_\-]{20,}`),                                          // Anthropic
+		regexp.MustCompile(`\bsk-(?:proj-)?[A-Za-z0-9_\-]{32,}`),                                    // OpenAI
+		regexp.MustCompile(`\bAIza[0-9A-Za-z_\-]{35}\b`),                                            // Google API key
+		regexp.MustCompile(`\bxox[abprs]-[A-Za-z0-9\-]{10,}`),                                       // Slack
 		regexp.MustCompile(`\beyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}`), // JWT
 		regexp.MustCompile(`(?i)\b(?:api[_\-]?key|secret[_\-]?key|client[_\-]?secret|access[_\-]?token|auth[_\-]?token)\b\s*["']?\s*[:=]\s*["']?[A-Za-z0-9_\-/+=.]{16,}`),
 	}

@@ -25,7 +25,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ platfor
   }
 
   const token = `hpa_${randomToken(32)}`;
-  const config = { apiUrl: env().APP_URL, token, orgName: org.name, userName: user.name };
+  // The extension opens /api/agent/goodbye?k=<key> when it's removed; only the key's hash is stored.
+  const uninstallKey = platform === "browser" ? `hpu_${randomToken(24)}` : undefined;
+  const config = { apiUrl: env().APP_URL, token, orgName: org.name, userName: user.name, uninstallKey };
   let file;
   try {
     file = platform === "browser" ? await buildExtensionDownload(config) : await buildAgentDownload(platform, config);
@@ -34,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ platfor
     return new Response("The desktop agent isn't available on this server yet. Ask your administrator to run `npm run build:agent`.", { status: 503 });
   }
 
-  await AgentDevice.create({ orgId: org._id, userId: user.id, tokenHash: sha256(token), platform });
+  await AgentDevice.create({ orgId: org._id, userId: user.id, tokenHash: sha256(token), platform, ...(uninstallKey ? { uninstallKeyHash: sha256(uninstallKey) } : {}) });
   await audit(org._id, user, "agent.downloaded", `Downloaded the HighPre ${platform === "browser" ? "browser extension" : `desktop agent for ${AGENT_PLATFORMS[platform].label}`}`);
 
   return new Response(new Uint8Array(file.body), {

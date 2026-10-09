@@ -15,6 +15,7 @@ const (
 	flushEvery     = 30 * time.Second // send queued detections
 	heartbeatEvery = 15 * time.Minute
 	updateEvery    = 6 * time.Hour
+	usageEvery     = 30 * time.Second // look at which app is in front, for the AI tools report
 )
 
 // Platform hooks, swappable in tests.
@@ -24,6 +25,7 @@ var (
 	fgWindow    = foregroundWindow
 	notifyUser  = notify
 	applyUpd    = applyUpdate
+	clock       = time.Now
 )
 
 type monitor struct {
@@ -36,12 +38,14 @@ type monitor struct {
 	pendingSince time.Time
 	clipVersion  uint64
 	alerted      map[string]bool // app keys already alerted for the current clipboard content
+	// usage records which AI apps were in front on which days (keys and dates only).
+	usage *usageLog
 }
 
 func policyPath() string { return filepath.Join(dataDir(), "policy.json") }
 
 func newMonitor(cfg Config) *monitor {
-	m := &monitor{api: newClient(cfg), alerted: map[string]bool{}}
+	m := &monitor{api: newClient(cfg), alerted: map[string]bool{}, usage: loadUsage()}
 	// The last policy received applies until the server can be reached again.
 	if data, err := os.ReadFile(policyPath()); err == nil {
 		var p Policy
@@ -54,10 +58,15 @@ func newMonitor(cfg Config) *monitor {
 
 func (m *monitor) loop() {
 	m.sendHeartbeat()
+	m.sendUsage()
 	m.update()
-	lastFlush, lastBeat, lastUpdate := time.Now(), time.Now(), time.Now()
+	lastFlush, lastBeat, lastUpdate, lastUsage := time.Now(), time.Now(), time.Now(), time.Now()
 	for {
 		m.tick()
+		if time.Since(lastUsage) > usageEvery {
+			lastUsage = time.Now()
+			m.sampleUsage()
+		}
 		if time.Since(lastFlush) > flushEvery {
 			lastFlush = time.Now()
 			m.check(m.api.flush())
@@ -67,6 +76,7 @@ func (m *monitor) loop() {
 			if m.sendHeartbeat() {
 				lastUpdate = time.Time{} // the server has a newer version: check now
 			}
+			m.sendUsage() // once a day: does nothing if already sent today
 		}
 		if time.Since(lastUpdate) > updateEvery {
 			lastUpdate = time.Now()
@@ -97,6 +107,9 @@ func (m *monitor) tick() {
 	// Only look at the foreground window while sensitive data is on the clipboard.
 	process, title := fgWindow()
 	app := ClassifyApp(process, title)
+	if m.sharesUsage() {
+		m.usage.record(app, clock())
+	}
 	if app == "" || m.alerted[app] || m.approved(app) {
 		return
 	}
@@ -139,6 +152,39 @@ func (m *monitor) approved(app string) bool {
 		}
 	}
 	return false
+}
+
+// sharesUsage is true unless the organisation turned off the AI tools report.
+func (m *monitor) sharesUsage() bool {
+	return m.policy == nil || m.policy.ShareAiUsage == nil || *m.policy.ShareAiUsage
+}
+
+// sampleUsage notes the AI app in front, if any. The window title is used to
+// recognise the app here and then dropped; only the app key is kept.
+func (m *monitor) sampleUsage() {
+	if !m.sharesUsage() {
+		return
+	}
+	process, title := fgWindow()
+	m.usage.record(ClassifyApp(process, title), clock())
+}
+
+// sendUsage sends finished days once a day. Off: the local record is dropped and nothing is sent.
+func (m *monitor) sendUsage() {
+	if !m.sharesUsage() {
+		m.usage.clear()
+		return
+	}
+	now := clock()
+	days := m.usage.due(now)
+	if len(days) == 0 {
+		return
+	}
+	err := m.api.sendUsage(days)
+	m.check(err)
+	if err == nil {
+		m.usage.sent(days, now)
+	}
 }
 
 // sendHeartbeat checks in, applies the latest policy, and reports whether a newer agent is available.

@@ -13,6 +13,7 @@ export { ParentalConsent } from "./parental-consent";
 export { BillingEvent } from "./billing-event";
 export { RateLimitBucket } from "./rate-limit";
 export { AgentAlert, AgentDevice, AgentPolicy } from "./agent";
+export { AiUsage } from "./ai-usage";
 export { Vendor } from "./vendor";
 export { PublicScanReport } from "./public-scan-report";
 export { ScanLead } from "./scan-lead";

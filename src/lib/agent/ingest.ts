@@ -13,6 +13,7 @@ import {
   AGENT_DATA_TYPE_KEYS,
   ALERT_OUTCOME_KEYS,
   ALERT_SOURCES,
+  ALERT_VIA_KEYS,
   type AgentDataType,
 } from "./catalog";
 import { getAgentPolicy } from "./policy";
@@ -42,6 +43,7 @@ export const enrollSchema = z
 /**
  * `.strict()` rejects unknown fields, so nothing but these keys can be stored.
  * `source` and `outcome` are optional for the desktop agent, which only warns.
+ * `via` says how the data was on its way out (pasted, typed, a file...), never what it was.
  */
 export const alertsSchema = z
   .object({
@@ -54,6 +56,7 @@ export const alertsSchema = z
             occurredAt: z.coerce.date(),
             source: z.enum(ALERT_SOURCES).optional(),
             outcome: z.enum(ALERT_OUTCOME_KEYS).optional(),
+            via: z.enum(ALERT_VIA_KEYS).optional(),
           })
           .strict(),
       )
@@ -96,7 +99,7 @@ export async function ingestAlerts(device: Device, events: z.infer<typeof alerts
     // Clamp clock skew: nothing from the future, nothing older than a week.
     const at = new Date(Math.min(Math.max(e.occurredAt.getTime(), now - 7 * 86_400_000), now));
     const existing = await AgentAlert.findOneAndUpdate(
-      { deviceId: device._id, dataType: e.dataType, app: e.app, outcome, lastOccurredAt: { $gte: new Date(at.getTime() - DEDUPE_MS) } },
+      { deviceId: device._id, dataType: e.dataType, app: e.app, outcome, via: e.via ?? null, lastOccurredAt: { $gte: new Date(at.getTime() - DEDUPE_MS) } },
       { $inc: { count: 1 }, $max: { lastOccurredAt: at } },
     );
     if (existing) continue;
@@ -109,6 +112,7 @@ export async function ingestAlerts(device: Device, events: z.infer<typeof alerts
       severity: AGENT_DATA_TYPES[e.dataType as AgentDataType].severity,
       source,
       outcome,
+      ...(e.via ? { via: e.via } : {}),
       occurredAt: at,
       lastOccurredAt: at,
       ...(outcome === "not_sensitive" ? { notSensitiveAt: at } : {}),
@@ -116,8 +120,8 @@ export async function ingestAlerts(device: Device, events: z.infer<typeof alerts
     fresh.push({ dataType: e.dataType, app: e.app, outcome });
   }
 
-  // The person said it was a false alarm: recorded for owners, but no email.
-  const emailable = fresh.filter((f) => f.outcome !== "not_sensitive");
+  // The person said it was a false alarm, or sent it with the details hidden: recorded for owners, but no email.
+  const emailable = fresh.filter((f) => f.outcome !== "not_sensitive" && f.outcome !== "masked");
   if (emailable.length && (!device.lastEmailAt || now - device.lastEmailAt.getTime() > EMAIL_EVERY_MS)) {
     await AgentDevice.updateOne({ _id: device._id }, { lastEmailAt: new Date(now) });
     await notifyOwners(device, emailable).catch((error) => log.error("agent.email_failed", { error: String(error) }));
@@ -133,7 +137,7 @@ async function notifyOwners(device: Device, items: Fresh[]) {
     User.find({ _id: { $in: ownerIds } }).select("email").lean(),
     device.userId ? User.findById(device.userId).select("name").lean() : null,
   ]);
-  const url = `${env().APP_URL}/dashboard/agent`;
+  const url = `${env().APP_URL}/dashboard/agent/alerts`;
   const memberName = member?.name ?? (device.enrolled ? deviceOwnerLabel(device) : "A team member");
   await Promise.allSettled(
     owners.map((o) => sendMail(agentAlertEmail({ to: o.email, orgName: org.name, memberName, device: device.hostname || "a computer", items, url }))),

@@ -25,10 +25,12 @@ type Event struct {
 }
 
 // Policy is set by the organisation's owners in the dashboard: which kinds of
-// data to watch for, and approved apps where no warning is needed.
+// data to watch for, approved apps where no warning is needed, and whether to
+// share which AI tools are used (nil, from an older server, means yes).
 type Policy struct {
-	DataTypes   []string `json:"dataTypes"`
-	AllowedApps []string `json:"allowedApps"`
+	DataTypes    []string `json:"dataTypes"`
+	AllowedApps  []string `json:"allowedApps"`
+	ShareAiUsage *bool    `json:"shareAiUsage,omitempty"`
 }
 
 type heartbeatReply struct {
@@ -164,6 +166,23 @@ func (c *client) getBytes(path string, query url.Values, max int64) ([]byte, int
 		return nil, 0, errors.New("response too large")
 	}
 	return data, res.StatusCode, nil
+}
+
+// sendUsage reports which AI apps were used on which days. Only app keys and dates.
+func (c *client) sendUsage(days []UsageDay) error {
+	return c.post("/api/agent/usage", map[string]any{"days": days}, nil)
+}
+
+// goodbye tells HighPre the person is removing the agent, so owners can see
+// the gap. It waits at most 3 seconds and never stops the uninstall.
+func goodbye(cfg Config) {
+	if cfg.APIURL == "" || cfg.Token == "" {
+		return
+	}
+	c := &client{cfg: cfg, http: &http.Client{Timeout: 3 * time.Second}}
+	if res, err := c.do(http.MethodPost, "/api/agent/goodbye", map[string]string{}, cfg.Token); err == nil {
+		res.Body.Close()
+	}
 }
 
 func (c *client) enqueue(e Event) {

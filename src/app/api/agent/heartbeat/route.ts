@@ -21,7 +21,8 @@ export async function POST(req: Request) {
   if (!parsed.success) return Response.json({ error: "Invalid heartbeat" }, { status: 422 });
   const now = new Date();
   // $min sets firstSeenAt on the first heartbeat and leaves it alone afterwards.
-  await AgentDevice.updateOne({ _id: device._id }, { $set: { ...parsed.data, lastSeenAt: now }, $min: { firstSeenAt: now } });
+  // Checking in again after a goodbye means it was reinstalled.
+  await AgentDevice.updateOne({ _id: device._id }, { $set: { ...parsed.data, lastSeenAt: now }, $min: { firstSeenAt: now }, $unset: { uninstalledAt: 1 } });
 
   const [policy, manifest] = await Promise.all([getAgentPolicy(device.orgId), isDesktopPlatform(device.platform) ? agentManifest() : null]);
   return Response.json({
