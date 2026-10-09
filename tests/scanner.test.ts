@@ -34,6 +34,12 @@ describe("analyzePage", () => {
   it("recognises a HighPre install by its attribute", () => {
     expect(analyzePage('<script src="/w.js" data-hp-site="abc"></script>', "https://x.in/").consentTool).toBe("HighPre");
   });
+
+  it("recognises the one-line install, on highpre.com or self-hosted", () => {
+    expect(analyzePage('<script src="https://highpre.com/s/VL1SFbZr-QbizdS2.js"></script>', "https://x.in/").consentTool).toBe("HighPre");
+    expect(analyzePage('<script src="/s/VL1SFbZr-QbizdS2.js"></script>', "https://x.in/").consentTool).toBe("HighPre");
+    expect(analyzePage('<script src="/s/app.js"></script>', "https://x.in/").consentTool).toBeUndefined();
+  });
 });
 
 describe("findings and score", () => {

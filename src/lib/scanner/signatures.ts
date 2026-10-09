@@ -33,7 +33,7 @@ export const TRACKERS: TrackerSignature[] = [
 ];
 
 export const CONSENT_TOOLS: { name: string; pattern: RegExp }[] = [
-  { name: "HighPre", pattern: /highpre\.com\/widget\.js|data-hp-site/ },
+  { name: "HighPre", pattern: /highpre\.com\/(?:widget\.js|s\/[A-Za-z0-9_-]{16}\.js)|data-hp-site/ },
   { name: "CookieYes", pattern: /cookieyes\.com/ },
   { name: "OneTrust", pattern: /onetrust\.com|cookielaw\.org/ },
   { name: "Cookiebot", pattern: /cookiebot\.com/ },

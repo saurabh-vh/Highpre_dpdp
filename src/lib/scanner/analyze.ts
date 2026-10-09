@@ -36,7 +36,9 @@ export function analyzePage(html: string, pageUrl: string): PageAnalysis {
 
   const trackers = TRACKERS.filter((t) => t.patterns.some((p) => p.test(haystack)));
   // HighPre is recognised by its attribute, so self-hosted or local installs count too.
-  const consentTool = $("script[data-hp-site]").length > 0 ? "HighPre" : CONSENT_TOOLS.find((c) => c.pattern.test(haystack))?.name;
+  // The one-line install is /s/<16-character site key>.js, on highpre.com or a self-hosted domain.
+  const hasSiteScript = $("script[src]").toArray().some((el) => /\/s\/[A-Za-z0-9_-]{16}\.js(?:[?#]|$)/.test($(el).attr("src") ?? ""));
+  const consentTool = $("script[data-hp-site]").length > 0 || hasSiteScript ? "HighPre" : CONSENT_TOOLS.find((c) => c.pattern.test(haystack))?.name;
 
   // Forms: group fields per <form>; stray inputs outside forms count as one group.
   const describeField = (el: Parameters<typeof $>[0]): string | null => {
